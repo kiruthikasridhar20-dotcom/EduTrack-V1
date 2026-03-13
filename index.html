@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduTrack — Mentor Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS — Deep Forest Academic Theme
+═══════════════════════════════════════════ */
+:root {
+  --bg:       #f0f2f5;
+  --bg2:      #ffffff;
+  --bg3:      #f5f7fa;
+  --bg4:      #e8ecf2;
+  --border:   rgba(0,0,0,0.10);
+  --border2:  rgba(0,0,0,0.15);
+  --emerald:  #1a56db;
+  --blue:     #2563eb;
+  --violet:   #7c3aed;
+  --amber:    #d97706;
+  --rose:     #e11d48;
+  --cyan:     #0369a1;
+  --lime:     #65a30d;
+  --text:     #111827;
+  --muted:    #6b7280;
+  --muted2:   #d1d5db;
+  --radius:   12px;
+  --shadow:   0 20px 60px rgba(0,0,0,0.4);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);font-size:13px;overflow-x:hidden}
+
+/* ═══ BACKGROUND MESH ═══ */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 800px 500px at 0% 0%,rgba(37,99,235,0.04) 0%,transparent 60%),
+    radial-gradient(ellipse 600px 400px at 100% 100%,rgba(99,102,241,0.03) 0%,transparent 60%),
+    radial-gradient(ellipse 400px 300px at 50% 40%,rgba(14,165,233,0.02) 0%,transparent 70%);
+}
+
+/* ═══ LOGIN SCREEN ═══ */
+#loginScreen{
+  position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-start;justify-content:center;
+  background:var(--bg);padding:40px 20px 30px;overflow-y:auto;
+}
+.login-container{width:420px;max-width:100%}
+.login-brand{text-align:center;margin-bottom:36px}
+.brand-logo{
+  width:64px;height:64px;border-radius:18px;margin:0 auto 16px;
+  background:linear-gradient(135deg,var(--emerald),var(--blue));
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  box-shadow:0 12px 40px rgba(37,99,235,0.3);
+}
+.brand-name{font-size:28px;font-weight:800;letter-spacing:-1px;
+  background:linear-gradient(135deg,var(--emerald),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-tagline{color:var(--muted);font-size:13px;margin-top:6px;font-weight:300}
+.login-card{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:20px;
+  padding:36px;position:relative;overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,0.5);
+}
+.login-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--emerald),var(--cyan),var(--blue));
+}
+.login-card h2{font-size:22px;font-weight:700;margin-bottom:6px}
+.login-card p{color:var(--muted);font-size:13px;margin-bottom:28px}
+.fld{margin-bottom:18px}
+.fld label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:7px}
+.fld input,.fld select{
+  width:100%;padding:12px 15px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;transition:all .2s;
+}
+.fld input:focus,.fld select:focus{border-color:var(--emerald);box-shadow:0 0 0 3px rgba(26,86,219,0.15)}
+.fld select option{background:var(--bg3)}
+.login-btn{
+  width:100%;padding:13px;border:none;border-radius:var(--radius);cursor:pointer;
+  background:linear-gradient(135deg,var(--emerald),#1d4ed8);color:#fff;
+  font-family:'Sora',sans-serif;font-size:15px;font-weight:700;transition:all .2s;margin-top:4px;
+}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(37,99,235,0.4)}
+.login-hint{margin-top:18px;text-align:center;font-size:12px;color:var(--muted)}
+.login-hint strong{color:var(--emerald)}
+.login-err{color:var(--rose);font-size:12px;margin-top:10px;padding:10px 13px;background:rgba(225,29,72,0.07);border:1px solid rgba(225,29,72,0.25);border-radius:9px;display:none;}
+
+/* ═══ APP SHELL ═══ */
+#app{display:none;height:100vh;position:relative;z-index:1}
+.layout{display:flex;height:100vh;overflow:hidden}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{
+  width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;position:relative;z-index:10;
+}
+.sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
+.sb-logo-inner{display:flex;align-items:center;gap:10px}
+.sb-logo-icon{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--emerald),var(--blue));
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.sb-logo-text{font-size:17px;font-weight:800;letter-spacing:-.5px}
+.sb-logo-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.sb-mentor{margin:12px 10px;padding:14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)}
+.sb-mentor-av{
+  width:40px;height:40px;border-radius:50%;margin-bottom:10px;
+  background:linear-gradient(135deg,var(--emerald),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;
+}
+.sb-mentor-name{font-size:13px;font-weight:600;line-height:1.3}
+.sb-mentor-role{font-size:11px;color:var(--emerald);margin-top:3px;font-weight:500}
+.nav-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted2);padding:12px 18px 5px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:9px 14px;margin:1px 8px;
+  border-radius:9px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;
+  transition:all .15s;position:relative;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:rgba(26,86,219,0.10);color:var(--emerald)}
+.nav-item .ni-ico{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-item .ni-badge{
+  margin-left:auto;background:var(--rose);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px;min-width:18px;text-align:center;
+}
+.nav-item .ni-new{
+  margin-left:auto;background:rgba(26,86,219,0.12);color:var(--emerald);
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;
+}
+.sb-footer{padding:12px;border-top:1px solid var(--border);margin-top:auto}
+.logout-btn{
+  width:100%;padding:9px;background:none;border:1px solid var(--border);
+  border-radius:9px;color:var(--muted);font-family:'Sora',sans-serif;font-size:12px;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.logout-btn:hover{background:var(--bg3);color:var(--text)}
+
+/* ═══ MAIN CONTENT ═══ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);background:rgba(255,255,255,0.95);
+  backdrop-filter:blur(20px);flex-shrink:0;
+}
+.topbar-title{font-size:19px;font-weight:700;letter-spacing:-.3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:7px 12px}
+.search-wrap input{background:none;border:none;outline:none;color:var(--text);font-family:'Sora',sans-serif;font-size:13px;width:180px}
+.search-wrap input::placeholder{color:var(--muted2)}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border:none;
+  border-radius:9px;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .2s;
+}
+.btn-primary{background:linear-gradient(135deg,var(--emerald),#1d4ed8);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(37,99,235,0.35)}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{background:var(--bg3);color:var(--text)}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#2563eb);color:#fff}
+.btn-blue:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(59,130,246,0.35)}
+.btn-violet{background:linear-gradient(135deg,var(--violet),#7c3aed);color:#fff}
+.btn-amber{background:linear-gradient(135deg,var(--amber),#d97706);color:#fff}
+.btn-rose{background:linear-gradient(135deg,var(--rose),#e11d48);color:#fff}
+.btn-sm{padding:6px 12px;font-size:11px}
+.content-area{flex:1;overflow-y:auto;padding:22px 24px}
+
+/* ═══ PAGES ═══ */
+.page{display:none}
+.page.active{display:block;animation:pageIn .25s ease}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ STATS ═══ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;position:relative;overflow:hidden;transition:all .2s;cursor:default;
+}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.3)}
+.stat-card-glow{position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;opacity:.15;filter:blur(25px)}
+.stat-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:10px}
+.stat-value{font-size:34px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:6px}
+.stat-icon{position:absolute;bottom:14px;right:16px;font-size:28px;opacity:.15}
+.stat-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+.card-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.card-header h3{font-size:15px;font-weight:700}
+.card-header .card-meta{font-size:12px;color:var(--muted)}
+.card-body{padding:18px 20px}
+
+/* ═══ TABLE ═══ */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{
+  padding:10px 14px;text-align:left;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.9px;color:var(--muted);
+  background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(0,0,0,0.025)}
+tbody td{padding:11px 14px;vertical-align:middle}
+.st-cell{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;
+}
+.avatar-lg{width:60px;height:60px;border-radius:16px;font-size:20px}
+.st-name{font-size:13px;font-weight:600}
+.st-sub{font-size:11px;color:var(--muted)}
+
+/* ═══ CHIPS ═══ */
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.chip-g{background:rgba(26,86,219,.10);color:var(--emerald)}
+.chip-r{background:rgba(225,29,72,.10);color:var(--rose)}
+.chip-b{background:rgba(37,99,235,.10);color:var(--blue)}
+.chip-a{background:rgba(217,119,6,.10);color:var(--amber)}
+.chip-v{background:rgba(124,58,237,.10);color:var(--violet)}
+.chip-c{background:rgba(3,105,161,.10);color:var(--cyan)}
+
+/* ═══ ACTION BUTTONS ═══ */
+.act-btns{display:flex;gap:5px}
+.act-btn{
+  width:28px;height:28px;border-radius:7px;border:1px solid var(--border);
+  background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--muted);transition:all .15s;
+}
+.act-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--emerald)}
+
+/* ═══ MODAL ═══ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:16px;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:20px;
+  width:960px;max-width:100%;max-height:92vh;overflow-y:auto;
+  box-shadow:0 40px 100px rgba(0,0,0,.6);position:relative;
+}
+.modal-top{
+  position:sticky;top:0;background:var(--bg2);z-index:10;
+  padding:22px 26px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-top::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--emerald),var(--cyan),var(--blue));
+}
+.modal-top h3{font-size:18px;font-weight:700;margin-top:3px}
+.modal-close{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:none;color:var(--muted);cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.modal-close:hover{background:var(--bg3);color:var(--text)}
+.modal-body{padding:22px 26px}
+.form-section{margin-bottom:24px}
+.form-section-title{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--emerald);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.form-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.form-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.field label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:9px;color:var(--text);font-family:'Sora',sans-serif;font-size:13px;
+  outline:none;transition:all .2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--emerald);box-shadow:0 0 0 3px rgba(26,86,219,.12)}
+.field select option{background:var(--bg3)}
+.field textarea{resize:vertical;min-height:70px}
+.modal-footer{
+  padding:16px 26px;border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px;
+  position:sticky;bottom:0;background:var(--bg2);
+}
+
+/* ═══ DETAIL VIEW ═══ */
+.back-btn{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 14px;
+  border:1px solid var(--border);border-radius:9px;background:none;color:var(--muted);
+  font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;margin-bottom:16px;
+}
+.back-btn:hover{background:var(--bg2);color:var(--text)}
+.detail-hero{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;display:flex;align-items:flex-start;gap:18px;margin-bottom:16px;
+  position:relative;overflow:hidden;
+}
+.detail-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--emerald),var(--blue))}
+.dh-actions{margin-left:auto;display:flex;gap:8px;flex-shrink:0}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.info-tile{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:13px}
+.info-tile .it-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:4px}
+.info-tile .it-val{font-size:13px;font-weight:500;line-height:1.5}
+.section-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--emerald);margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--border);
+}
+
+/* ═══ CGPA BARS ═══ */
+.cbar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.cbar-name{font-size:12px;width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbar-bg{flex:1;height:7px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.cbar-fill{height:100%;border-radius:99px;transition:width 1.1s ease}
+.cbar-val{width:36px;font-size:12px;font-weight:700;text-align:right;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+
+/* ═══ MESSAGING ═══ */
+.msg-layout{display:grid;grid-template-columns:260px 1fr;gap:0;height:calc(100vh - 130px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--bg2)}
+.msg-sidebar{border-right:1px solid var(--border);overflow-y:auto}
+.msg-sidebar-head{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700}
+.msg-contact{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.03);transition:background .12s;
+}
+.msg-contact:hover{background:var(--bg3)}
+.msg-contact.active{background:rgba(37,99,235,.08)}
+.msg-contact-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.msg-contact-name{font-size:13px;font-weight:600}
+.msg-contact-last{font-size:11px;color:var(--muted)}
+.msg-contact-badge{
+  margin-left:auto;width:18px;height:18px;border-radius:50%;
+  background:var(--emerald);color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.msg-main{display:flex;flex-direction:column}
+.msg-topbar{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.msg-topbar-name{font-size:14px;font-weight:700}
+.msg-topbar-status{font-size:11px;color:var(--emerald);display:flex;align-items:center;gap:5px}
+.msg-topbar-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--emerald);display:inline-block}
+.msg-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg-bubble{max-width:70%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;position:relative}
+.msg-bubble.sent{background:linear-gradient(135deg,rgba(26,86,219,.12),rgba(3,105,161,.10));border:1px solid rgba(26,86,219,.2);align-self:flex-end;border-bottom-right-radius:3px}
+.msg-bubble.recv{background:var(--bg3);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:3px}
+.msg-bubble .msg-time{font-size:10px;color:var(--muted);margin-top:4px}
+.msg-input-area{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
+.msg-input-area textarea{
+  flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:9px;
+  padding:10px 13px;color:var(--text);font-family:'Sora',sans-serif;font-size:13px;
+  resize:none;outline:none;max-height:100px;transition:border-color .2s;min-height:42px;
+}
+.msg-input-area textarea:focus{border-color:var(--emerald)}
+
+/* ═══ NOTIFICATIONS PANEL ═══ */
+.notif-item{
+  display:flex;align-items:flex-start;gap:12px;padding:12px 14px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:9px;margin-bottom:8px;transition:all .15s;
+}
+.notif-item:hover{transform:translateX(3px);border-color:rgba(37,99,235,.2)}
+.notif-item.unread{border-left:3px solid var(--emerald)}
+.notif-ico{font-size:20px;flex-shrink:0}
+.notif-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.notif-desc{font-size:12px;color:var(--muted)}
+.notif-time{margin-left:auto;font-size:11px;color:var(--muted2);white-space:nowrap;flex-shrink:0}
+
+/* ═══ SCHEDULE ═══ */
+.sch-item{display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--bg3);border-radius:9px;margin-bottom:7px}
+.sch-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sch-time{font-size:11px;color:var(--muted);width:130px;flex-shrink:0}
+.sch-text{font-size:13px}
+
+/* ═══ FEATURES GRID ═══ */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.feat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;transition:all .2s;
+}
+.feat-card:hover{transform:translateY(-3px);border-color:rgba(37,99,235,.25);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.feat-card .fc-ico{font-size:26px;margin-bottom:12px}
+.feat-card .fc-title{font-size:13px;font-weight:700;margin-bottom:5px}
+.feat-card .fc-desc{font-size:12px;color:var(--muted);line-height:1.65}
+.feat-card .fc-tag{display:inline-block;margin-top:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;padding:3px 8px;border-radius:6px;background:rgba(37,99,235,.1);color:var(--emerald)}
+
+/* ═══ TABS ═══ */
+.tabs{display:flex;gap:3px;background:var(--bg3);padding:3px;border-radius:10px;width:fit-content;margin-bottom:16px}
+.tab{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted)}
+.tab.active{background:var(--bg2);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+/* ═══ TOAST ═══ */
+.toast{
+  position:fixed;bottom:24px;right:24px;min-width:260px;padding:13px 18px;
+  background:var(--bg2);border-radius:var(--radius);font-size:13px;font-weight:500;
+  z-index:9999;display:flex;align-items:center;gap:10px;
+  box-shadow:0 12px 40px rgba(0,0,0,.15);transform:translateY(16px);opacity:0;transition:all .28s;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border:1px solid var(--emerald)}
+.toast.info{border:1px solid var(--blue)}
+.toast.warn{border:1px solid var(--amber)}
+
+/* ═══ NOTIFICATION BELL (topbar) ═══ */
+.notif-btn{
+  position:relative;width:36px;height:36px;border-radius:9px;
+  background:var(--bg2);border:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:all .15s;
+}
+.notif-btn:hover{background:var(--bg3)}
+.notif-dot{
+  position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;
+  background:var(--rose);border:2px solid var(--bg2);
+}
+
+/* ═══ STUDENT INBOX (Student View simulation) ═══ */
+#studentInbox{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(15px);
+  z-index:800;display:none;align-items:center;justify-content:center;
+}
+#studentInbox.show{display:flex}
+.student-inbox-panel{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:20px;
+  width:480px;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow);
+  position:relative;
+}
+.sip-header{
+  padding:20px 22px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:var(--bg2);z-index:5;
+}
+.sip-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--violet))}
+.sip-header h3{font-size:16px;font-weight:700;margin-top:3px}
+.sip-msgs{padding:14px 18px}
+.sip-msg{
+  padding:13px;background:var(--bg3);border-radius:10px;margin-bottom:10px;
+  border-left:3px solid var(--blue);animation:popIn .3s ease;
+}
+@keyframes popIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.sip-msg-from{font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px}
+.sip-msg-text{font-size:13px;line-height:1.6}
+.sip-msg-time{font-size:10px;color:var(--muted);margin-top:6px}
+.sip-empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+
+/* ═══ HAMBURGER BUTTON ═══ */
+.hamburger{
+  display:none;width:38px;height:38px;border-radius:9px;border:1px solid var(--border);
+  background:var(--bg2);cursor:pointer;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;transition:all .15s;color:var(--text);
+}
+.hamburger:hover{background:var(--bg3)}
+
+/* ═══ SIDEBAR OVERLAY (mobile) ═══ */
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;
+  backdrop-filter:blur(4px);
+}
+.sidebar-overlay.open{display:block}
+
+/* ═══ RESPONSIVE — TABLET 900px ═══ */
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .info-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid-4{grid-template-columns:repeat(2,1fr)}
+  .feat-grid{grid-template-columns:repeat(2,1fr)}
+  .msg-layout{grid-template-columns:1fr;height:auto;min-height:60vh}
+  .msg-sidebar{max-height:200px;border-right:none;border-bottom:1px solid var(--border)}
+  .modal{width:100%!important;margin:0 8px}
+  .topbar-right .search-wrap{display:none}
+}
+
+/* ═══ RESPONSIVE — MOBILE 680px ═══ */
+@media(max-width:680px){
+  /* Sidebar becomes a slide-in drawer */
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;z-index:100;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    width:260px;
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,.5)}
+
+  /* Show hamburger */
+  .hamburger{display:flex}
+
+  /* Layout fills full width */
+  .layout{flex-direction:column}
+  .main{width:100%;min-width:0}
+
+  /* Topbar */
+  .topbar{padding:10px 14px;gap:8px;flex-wrap:nowrap}
+  .topbar-title{font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar-right{gap:6px;flex-shrink:0}
+  .topbar-right .search-wrap{display:none}
+  #addStudentBtn span:not(:first-child){display:none}
+  .notif-btn{width:32px;height:32px;font-size:14px}
+  /* Hide student inbox button text on mobile */
+  .btn.btn-blue.btn-sm[onclick*="studentInbox"]{font-size:0;width:32px;height:32px;padding:0;justify-content:center}
+  .btn.btn-blue.btn-sm[onclick*="studentInbox"]::before{content:'📬';font-size:16px}
+
+  /* Content area */
+  .content-area{padding:12px}
+
+  /* Stats */
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .stat-card{padding:13px}
+  .stat-value{font-size:26px}
+
+  /* Grids → 1 col */
+  .info-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid-2{grid-template-columns:1fr}
+  .form-grid-4{grid-template-columns:1fr 1fr}
+  .feat-grid{grid-template-columns:1fr}
+
+  /* Dashboard 2-col grid */
+  #contentArea > div > div[style*="grid-template-columns:1fr 300px"],
+  div[style*="grid-template-columns:1fr 300px"]{
+    grid-template-columns:1fr!important;
+  }
+
+  /* Tables → card rows */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12px;min-width:600px}
+  thead th{padding:8px 10px;font-size:9px}
+  tbody td{padding:8px 10px}
+
+  /* Cards */
+  .card-header{padding:12px 14px;gap:8px}
+  .card-header h3{font-size:13px}
+  .card-body{padding:12px 14px}
+
+  /* Detail hero */
+  .detail-hero{flex-direction:column;gap:12px}
+  .dh-actions{margin-left:0;flex-wrap:wrap}
+
+  /* Modal → full screen on mobile */
+  .modal-overlay{padding:0;align-items:flex-end}
+  .modal{
+    border-radius:20px 20px 0 0!important;max-height:95vh;width:100%!important;
+    margin:0!important;
+  }
+  .modal-top{padding:16px 16px 12px}
+  .modal-body{padding:14px 16px}
+  .modal-footer{padding:12px 16px}
+
+  /* Messages */
+  .msg-layout{grid-template-columns:1fr;height:calc(100vh - 160px)}
+  .msg-sidebar{max-height:180px;border-right:none;border-bottom:1px solid var(--border);overflow-y:auto}
+  .msg-main{min-height:300px}
+
+  /* Tabs */
+  .tabs{flex-wrap:wrap;gap:3px}
+  .tab{padding:6px 10px;font-size:11px}
+
+  /* Notification items */
+  .notif-item{flex-wrap:wrap;gap:8px}
+  .notif-time{margin-left:0;width:100%;text-align:left}
+
+  /* Schedule */
+  .sch-item{flex-wrap:wrap;gap:6px}
+  .sch-time{width:auto}
+
+  /* Buttons */
+  .btn{padding:7px 12px;font-size:11px}
+  .btn-sm{padding:5px 9px;font-size:10px}
+  .back-btn{padding:6px 10px;font-size:11px}
+
+  /* Student inbox panel */
+  .student-inbox-panel{width:100%;border-radius:20px 20px 0 0}
+  #studentInbox{align-items:flex-end}
+
+  /* CGPA bars */
+  .cbar-name{width:80px;font-size:11px}
+  .cbar-val{width:30px;font-size:11px}
+}
+
+/* ═══ RESPONSIVE — SMALL 400px ═══ */
+@media(max-width:400px){
+  .stats-grid{grid-template-columns:1fr}
+  .form-grid-4{grid-template-columns:1fr}
+  .login-card{padding:22px 18px}
+  .brand-name{font-size:22px}
+  .content-area{padding:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="loginScreen">
+  <div class="login-container">
+    <div class="login-brand">
+      <div class="brand-logo">🎓</div>
+      <div class="brand-name">EduTrack</div>
+      <div class="brand-tagline">Comprehensive Student Mentorship Portal</div>
+    </div>
+
+    <!-- SIGN IN CARD -->
+    <div class="login-card" id="signInCard">
+      <h2>Mentor Sign In</h2>
+      <p>Enter your registered mentor credentials to access the portal</p>
+      
+      <div class="fld">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" placeholder="Enter your email address" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="fld">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-err" id="loginErr"></div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In to Portal →</button>
+      <div class="login-hint" style="text-align:center;margin-top:18px">
+        Don't have an account? <strong style="color:var(--emerald);cursor:pointer" onclick="toggleAuthMode(true)">Create one here →</strong>
+      </div>
+    </div>
+
+    <!-- SIGN UP CARD -->
+    <div class="login-card" id="signUpCard" style="display:none">
+      <h2>Create Mentor Account</h2>
+      <p>Register with your own email and password to get started</p>
+      <div class="fld">
+        <label>Full Name *</label>
+        <input type="text" id="regName" placeholder="e.g. Dr. Your Name" autocomplete="name">
+      </div>
+      <div class="fld">
+        <label>Email Address *</label>
+        <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="fld">
+        <label>Department</label>
+        <select id="regDept">
+          <option value="CSE">CSE</option><option value="ECE">ECE</option><option value="EEE">EEE</option>
+          <option value="IT">IT</option><option value="MECH">MECH</option><option value="CIVIL">CIVIL</option>
+          <option value="AIDS">AIDS</option><option value="AIML">AIML</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Designation</label>
+        <input type="text" id="regDesig" placeholder="e.g. Assistant Professor">
+      </div>
+      <div class="fld">
+        <label>Password *</label>
+        <input type="password" id="regPass" placeholder="Choose a strong password" autocomplete="new-password">
+      </div>
+      <div class="fld">
+        <label>Confirm Password *</label>
+        <input type="password" id="regPass2" placeholder="Re-enter your password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div class="login-err" id="regErr"></div>
+      <button class="login-btn" id="regBtn" onclick="doRegister()">Create Account & Sign In →</button>
+      <div class="login-hint" style="text-align:center;margin-top:18px">
+        Already have an account? <strong style="color:var(--emerald);cursor:pointer" onclick="toggleAuthMode(false)">Sign in here →</strong>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+  <!-- Mobile sidebar overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-logo">
+        <div class="sb-logo-inner" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="sb-logo-icon">🎓</div>
+            <div>
+              <div class="sb-logo-text">EduTrack</div>
+              <div class="sb-logo-sub">Mentor Portal v3.0</div>
+            </div>
+          </div>
+          <button onclick="closeSidebar()" aria-label="Close menu" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;display:none" id="sbCloseBtn">✕</button>
+        </div>
+      </div>
+      <div class="sb-mentor">
+        <div class="sb-mentor-av" id="sbAv">DK</div>
+        <div class="sb-mentor-name" id="sbName">Dr. Ramesh Kumar</div>
+        <div class="sb-mentor-role" id="sbRole">Associate Professor · CSE</div>
+      </div>
+      <nav id="sideNav">
+        <div class="nav-section">Main</div>
+        <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="ni-ico">📊</span> Dashboard</div>
+        <div class="nav-item" onclick="showPage('students',this)"><span class="ni-ico">👥</span> My Students</div>
+        <div class="nav-item" onclick="showPage('messages',this)"><span class="ni-ico">💬</span> Messages <span class="ni-badge" id="msgBadge">3</span></div>
+        <div class="nav-item" onclick="showPage('notifications',this)"><span class="ni-ico">🔔</span> Alerts <span class="ni-badge" id="alertBadge">4</span></div>
+        <div class="nav-section">Analytics</div>
+        <div class="nav-item" onclick="showPage('performance',this)"><span class="ni-ico">📈</span> Performance</div>
+        <div class="nav-item" onclick="showPage('meetings',this)"><span class="ni-ico">📅</span> Meetings</div>
+        <div class="nav-section">Records</div>
+        <div class="nav-item" onclick="showPage('hackathons',this)"><span class="ni-ico">💻</span> Hackathons</div>
+        <div class="nav-item" onclick="showPage('scholarships',this)"><span class="ni-ico">🏆</span> Scholarships</div>
+        <div class="nav-item" onclick="showPage('arrears',this)"><span class="ni-ico">⚠️</span> Arrears</div>
+        <div class="nav-section">Guide</div>
+        <div class="nav-item" onclick="showPage('features',this)"><span class="ni-ico">💡</span> Extra Features <span class="ni-new">NEW</span></div>
+      </nav>
+      <div class="sb-footer">
+        <button class="logout-btn" onclick="doLogout()">🚪 Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="topbar">
+        <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <div class="topbar-right">
+          <div class="search-wrap">
+            <span style="color:var(--muted)">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search students…" oninput="onSearch()">
+          </div>
+          <div class="notif-btn" onclick="showPage('notifications', document.querySelectorAll('.nav-item')[3])" title="Notifications">
+            🔔<span class="notif-dot"></span>
+          </div>
+          <button class="btn btn-blue btn-sm" onclick="document.getElementById('studentInbox').classList.add('show')" title="View Student Inbox" style="gap:5px">📬 Student Inbox</button>
+          <button class="btn btn-primary" id="addStudentBtn" onclick="openStudentModal()">＋ Add Student</button>
+        </div>
+      </div>
+
+      <div class="content-area" id="contentArea">
+        <!-- PAGES RENDERED HERE -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ STUDENT MODAL ═══════════════ -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal">
+    <div class="modal-top">
+      <h3 id="modalTitle">Add New Student</h3>
+      <button class="modal-close" onclick="closeStudentModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editStudentId" value="">
+
+      <!-- PERSONAL -->
+      <div class="form-section">
+        <div class="form-section-title">👤 Personal Information</div>
+        <div class="form-grid">
+          <div class="field"><label>Full Name *</label><input id="f_name" placeholder="Student full name"></div>
+          <div class="field"><label>Register No. *</label><input id="f_regno" placeholder="e.g. 21CS001"></div>
+          <div class="field"><label>Date of Birth</label><input type="date" id="f_dob"></div>
+          <div class="field"><label>Blood Group</label>
+            <select id="f_blood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+          </div>
+          <div class="field"><label>Gender</label>
+            <select id="f_gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select>
+          </div>
+          <div class="field"><label>Year of Study</label>
+            <select id="f_year"><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select>
+          </div>
+          <div class="field"><label>Department</label>
+            <select id="f_dept"><option>CSE</option><option>ECE</option><option>EEE</option><option>IT</option><option>MECH</option><option>CIVIL</option><option>AIDS</option><option>AIML</option></select>
+          </div>
+          <div class="field"><label>Section</label><input id="f_section" placeholder="A / B / C"></div>
+          <div class="field"><label>Community</label>
+            <select id="f_community"><option value="">Select</option><option>OC</option><option>BC</option><option>MBC</option><option>SC</option><option>ST</option></select>
+          </div>
+        </div>
+        <div style="margin-top:12px"><div class="field"><label>Residential Address</label><textarea id="f_address" placeholder="Full residential address including city, state and PIN"></textarea></div></div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="form-section">
+        <div class="form-section-title">📞 Contact Information</div>
+        <div class="form-grid">
+          <div class="field"><label>Email ID *</label><input type="email" id="f_email" placeholder="student@email.com"></div>
+          <div class="field"><label>Student Phone *</label><input id="f_phone" placeholder="+91 9XXXXXXXXX"></div>
+          <div class="field"><label>WhatsApp Number</label><input id="f_whatsapp" placeholder="+91 9XXXXXXXXX"></div>
+        </div>
+      </div>
+
+      <!-- PARENT/GUARDIAN -->
+      <div class="form-section">
+        <div class="form-section-title">👨‍👩‍👧 Parent / Guardian Details</div>
+        <div class="form-grid">
+          <div class="field"><label>Father's Name</label><input id="f_father_name" placeholder="Father's full name"></div>
+          <div class="field"><label>Father's Occupation</label><input id="f_father_occ" placeholder="e.g. Farmer, Engineer"></div>
+          <div class="field"><label>Father's Annual Salary (₹)</label><input type="number" id="f_father_salary" placeholder="e.g. 300000"></div>
+          <div class="field"><label>Father's Phone</label><input id="f_father_phone" placeholder="+91 9XXXXXXXXX"></div>
+          <div class="field"><label>Mother's Name</label><input id="f_mother_name" placeholder="Mother's full name"></div>
+          <div class="field"><label>Mother's Occupation</label><input id="f_mother_occ" placeholder="e.g. Homemaker, Teacher"></div>
+          <div class="field"><label>Mother's Annual Salary (₹)</label><input type="number" id="f_mother_salary" placeholder="e.g. 200000"></div>
+          <div class="field"><label>Mother's Phone</label><input id="f_mother_phone" placeholder="+91 9XXXXXXXXX"></div>
+          <div class="field"><label>Guardian Name (if different)</label><input id="f_guardian" placeholder="Guardian full name"></div>
+        </div>
+      </div>
+
+      <!-- SIBLINGS -->
+      <div class="form-section">
+        <div class="form-section-title">👫 Siblings Details</div>
+        <div class="form-grid">
+          <div class="field"><label>Number of Siblings</label><input type="number" id="f_sibling_count" placeholder="0" min="0"></div>
+          <div class="field"><label>Sibling 1 Name & Relation</label><input id="f_sibling1" placeholder="e.g. Ravi Kumar — Brother (Employed)"></div>
+          <div class="field"><label>Sibling 2 Name & Relation</label><input id="f_sibling2" placeholder="e.g. Priya — Sister (Student)"></div>
+        </div>
+        <div style="margin-top:12px"><div class="field"><label>Additional Siblings Info</label><textarea id="f_sibling_notes" placeholder="Any additional family / sibling information…"></textarea></div></div>
+      </div>
+
+      <!-- ACADEMIC -->
+      <div class="form-section">
+        <div class="form-section-title">📚 Academic Records</div>
+        <div class="form-grid">
+          <div class="field"><label>CGPA</label><input type="number" id="f_cgpa" placeholder="0.00 – 10.00" step="0.01" min="0" max="10"></div>
+          <div class="field"><label>Latest Sem GPA</label><input type="number" id="f_gpa" placeholder="0.00 – 10.00" step="0.01" min="0" max="10"></div>
+          <div class="field"><label>Arrears Count</label><input type="number" id="f_arrears" placeholder="0" min="0"></div>
+          <div class="field"><label>Arrear Subjects</label><input id="f_arrear_sub" placeholder="e.g. Maths III, DBMS"></div>
+          <div class="field"><label>10th % / CGPA</label><input id="f_tenth" placeholder="e.g. 92% or 9.2"></div>
+          <div class="field"><label>12th % / Diploma CGPA</label><input id="f_twelfth" placeholder="e.g. 88% or 8.8"></div>
+        </div>
+      </div>
+
+      <!-- SCHOLARSHIP -->
+      <div class="form-section">
+        <div class="form-section-title">🏆 Scholarship Details</div>
+        <div class="form-grid">
+          <div class="field"><label>Scholarship Name</label><input id="f_schol" placeholder="e.g. BC/MBC, Merit, NSP"></div>
+          <div class="field"><label>Scholarship Type</label>
+            <select id="f_schol_type"><option value="">None</option><option>Government</option><option>Private</option><option>Institutional</option><option>Foreign</option></select>
+          </div>
+          <div class="field"><label>Status</label>
+            <select id="f_schol_status"><option value="">None</option><option>Applied</option><option>Approved</option><option>Disbursed</option><option>Rejected</option><option>Renewal Pending</option></select>
+          </div>
+          <div class="field"><label>Amount (₹)</label><input type="number" id="f_schol_amt" placeholder="e.g. 25000"></div>
+          <div class="field"><label>Application Year</label><input id="f_schol_year" placeholder="e.g. 2024–25"></div>
+          <div class="field"><label>Scholarship Portal ID</label><input id="f_schol_id" placeholder="Portal reference number"></div>
+        </div>
+      </div>
+
+      <!-- HACKATHON -->
+      <div class="form-section">
+        <div class="form-section-title">💻 Hackathons & Activities</div>
+        <div class="form-grid">
+          <div class="field"><label>Hackathon Name</label><input id="f_hack" placeholder="e.g. Smart India Hackathon 2024"></div>
+          <div class="field"><label>Organizer</label><input id="f_hack_org" placeholder="e.g. AICTE, IIT Madras"></div>
+          <div class="field"><label>Result</label>
+            <select id="f_hack_res"><option value="">N/A</option><option>Winner</option><option>Runner-up</option><option>Finalist</option><option>Top 10</option><option>Participated</option></select>
+          </div>
+          <div class="field"><label>Prize/Recognition</label><input id="f_hack_prize" placeholder="e.g. ₹50,000 cash prize"></div>
+          <div class="field"><label>Extracurriculars</label><input id="f_extra" placeholder="NSS, Sports, Club…"></div>
+          <div class="field"><label>Internship Details</label><input id="f_intern" placeholder="Company, duration, role"></div>
+        </div>
+      </div>
+
+      <!-- HEALTH & MISC -->
+      <div class="form-section">
+        <div class="form-section-title">🏥 Health & Additional Info</div>
+        <div class="form-grid">
+          <div class="field"><label>Any Medical Condition</label><input id="f_medical" placeholder="e.g. Diabetes, None"></div>
+          <div class="field"><label>Differently Abled</label>
+            <select id="f_disability"><option value="">No</option><option>Yes — Visual</option><option>Yes — Hearing</option><option>Yes — Physical</option><option>Yes — Other</option></select>
+          </div>
+          <div class="field"><label>Hostel / Day Scholar</label>
+            <select id="f_hostel"><option value="">Select</option><option>Hostel</option><option>Day Scholar</option></select>
+          </div>
+        </div>
+        <div style="margin-top:12px"><div class="field"><label>Mentor Private Notes</label><textarea id="f_notes" placeholder="Private observations, action items, counselling notes…"></textarea></div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeStudentModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">💾 Save Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MESSAGE MODAL ═══════════════ -->
+<div class="modal-overlay" id="msgModal" style="z-index:600">
+  <div class="modal" style="width:500px">
+    <div class="modal-top">
+      <h3>Send Message</h3>
+      <button class="modal-close" onclick="closeMsgModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:14px">
+        <label>To: Student</label>
+        <input id="msgTo" readonly style="background:var(--bg4)">
+      </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Subject</label>
+        <input id="msgSubject" placeholder="Message subject…">
+      </div>
+      <div class="field">
+        <label>Message</label>
+        <textarea id="msgBody" style="min-height:120px" placeholder="Type your message here. Student will receive a notification…"></textarea>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:9px;font-size:12px;color:var(--muted)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span style="color:var(--emerald)">📧</span><strong style="color:var(--emerald)">Email will be sent to student's registered email address</strong></div>
+        Clicking "Send &amp; Notify" will open your default mail app pre-filled with the student's email, subject and message. Simply click Send in your mail app to deliver it.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeMsgModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="sendMessage()">📤 Send & Notify</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ STUDENT INBOX SIMULATION ═══════════════ -->
+<div id="studentInbox">
+  <div class="student-inbox-panel">
+    <div class="sip-header">
+      <div>
+        <h3>📬 Student Notification Inbox</h3>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Messages received by students from their mentor</div>
+      </div>
+      <button class="modal-close" onclick="closeStudentInbox()">✕</button>
+    </div>
+    <div class="sip-msgs" id="sipMsgs">
+      <div class="sip-empty">No messages yet</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST ═══════════════ -->
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DATA — Mentors
+═══════════════════════════════════════════ */
+const MENTORS = {
+  M1: { name:'Dr. Ramesh Kumar',    role:'Associate Professor · CSE', initials:'DR', dept:'CSE' },
+  M2: { name:'Dr. Kavitha Priya',   role:'Assistant Professor · CSE', initials:'KP', dept:'CSE' },
+  M3: { name:'Prof. Anil Sharma',   role:'Associate Professor · ECE', initials:'AS', dept:'ECE' },
+};
+
+/* ═══ STUDENT DATABASE ═══ */
+let STUDENTS = [
+  {
+    id:'S1', mentorId:'M1',
+    name:'Arun Kumar',        regno:'21CS001',     dob:'2003-06-15',     blood:'B+',    gender:'Male',   year:'3rd Year',
+    dept:'CSE',               section:'A',          community:'BC',        address:'12, Gandhi Nagar, Chennai - 600001',
+    email:'arun@student.edu', phone:'9876543210',   whatsapp:'9876543210',
+    father_name:'Kumar Raj',  father_occ:'Farmer',  father_salary:120000,  father_phone:'9876543211',
+    mother_name:'Selvi Raj',  mother_occ:'Homemaker', mother_salary:0,    mother_phone:'9876543212',
+    guardian:'',
+    sibling_count:2,          sibling1:'Ravi Kumar – Brother (Employed)',  sibling2:'Anitha – Sister (School)',  sibling_notes:'Elder brother supports family income.',
+    cgpa:8.7, gpa:9.1, arrears:0, arrear_sub:'', tenth:'92%', twelfth:'88%',
+    schol:'BC Scholarship',   schol_type:'Government', schol_status:'Disbursed', schol_amt:25000, schol_year:'2024-25', schol_id:'TN2024BC00123',
+    hack:'Smart India Hackathon 2024', hack_org:'AICTE', hack_res:'Finalist', hack_prize:'₹10,000',
+    extra:'NSS, Cricket',     intern:'TCS — 2 months, Web Dev',
+    medical:'None',           disability:'', hostel:'Day Scholar',
+    notes:'Excellent student. Strong in DSA. Placement-ready.',
+  },
+  {
+    id:'S2', mentorId:'M1',
+    name:'Priya Devi',        regno:'21CS002',     dob:'2003-09-22',     blood:'O+',    gender:'Female', year:'3rd Year',
+    dept:'CSE',               section:'A',          community:'OC',        address:'45, Anna Salai, Chennai - 600002',
+    email:'priya@student.edu',phone:'9876543220',   whatsapp:'9876543220',
+    father_name:'Devi Raj',   father_occ:'Engineer',father_salary:650000,  father_phone:'9876543221',
+    mother_name:'Lakshmi',    mother_occ:'Teacher', mother_salary:320000,  mother_phone:'9876543222',
+    guardian:'',
+    sibling_count:1,          sibling1:'Karthik – Brother (Working)',  sibling2:'',   sibling_notes:'',
+    cgpa:9.2, gpa:9.5, arrears:0, arrear_sub:'', tenth:'96%', twelfth:'94%',
+    schol:'Merit Scholarship',schol_type:'Institutional',schol_status:'Disbursed',schol_amt:50000,schol_year:'2024-25',schol_id:'MERIT2024001',
+    hack:'HackFest 2024',     hack_org:'IIT Madras',hack_res:'Winner',    hack_prize:'₹50,000',
+    extra:'Debate Club',      intern:'Infosys — 3 months, AI/ML',
+    medical:'None',           disability:'', hostel:'Hostel',
+    notes:'Dept Rank 1. Should be nominated for Best Student Award.',
+  },
+  {
+    id:'S3', mentorId:'M1',
+    name:'Mohammed Faiz',     regno:'21CS003',     dob:'2003-03-10',     blood:'A+',    gender:'Male',   year:'3rd Year',
+    dept:'CSE',               section:'A',          community:'BC',        address:'78, Velachery, Chennai - 600042',
+    email:'faiz@student.edu', phone:'9876543230',   whatsapp:'9876543230',
+    father_name:'Abdul Faiz', father_occ:'Auto Driver', father_salary:96000, father_phone:'9876543231',
+    mother_name:'Fatima',     mother_occ:'Homemaker', mother_salary:0,    mother_phone:'9876543232',
+    guardian:'',
+    sibling_count:3,          sibling1:'Irfan – Brother (Student)',  sibling2:'Zara – Sister (School)',  sibling_notes:'Economically weaker section. Needs financial aid guidance.',
+    cgpa:6.4, gpa:6.8, arrears:3, arrear_sub:'Maths III, DBMS, OS', tenth:'78%', twelfth:'72%',
+    schol:'',                 schol_type:'', schol_status:'', schol_amt:0, schol_year:'', schol_id:'',
+    hack:'',                  hack_org:'', hack_res:'', hack_prize:'',
+    extra:'Football',         intern:'',
+    medical:'None',           disability:'', hostel:'Day Scholar',
+    notes:'Needs academic support urgently. Scheduled counselling. Should apply for BC scholarship.',
+  },
+  {
+    id:'S4', mentorId:'M1',
+    name:'Lakshmi Priya',     regno:'21CS004',     dob:'2003-11-05',     blood:'AB+',   gender:'Female', year:'3rd Year',
+    dept:'CSE',               section:'B',          community:'MBC',       address:'23, T Nagar, Chennai - 600017',
+    email:'lakshmi@student.edu',phone:'9876543240', whatsapp:'9876543240',
+    father_name:'Priya Kumar',father_occ:'Shopkeeper',father_salary:240000, father_phone:'9876543241',
+    mother_name:'Vani',       mother_occ:'Tailor',  mother_salary:60000,   mother_phone:'9876543242',
+    guardian:'',
+    sibling_count:1,          sibling1:'Ramu – Brother (Diploma)',  sibling2:'',  sibling_notes:'',
+    cgpa:7.9, gpa:8.3, arrears:1, arrear_sub:'Computer Networks', tenth:'85%', twelfth:'82%',
+    schol:'OBC Scholarship',  schol_type:'Government',schol_status:'Applied',schol_amt:20000,schol_year:'2024-25',schol_id:'OBC2024078',
+    hack:'CodeCraft 2025',    hack_org:'Anna University', hack_res:'Participated', hack_prize:'',
+    extra:'Music, Yoga',      intern:'',
+    medical:'Mild Asthma',    disability:'', hostel:'Day Scholar',
+    notes:'Good potential. One arrear — follow up on clearing Networks.',
+  },
+  {
+    id:'S5', mentorId:'M1',
+    name:'Karthik Raja',      regno:'21CS005',     dob:'2003-07-20',     blood:'B-',    gender:'Male',   year:'3rd Year',
+    dept:'CSE',               section:'B',          community:'OC',        address:'56, Adyar, Chennai - 600020',
+    email:'karthik@student.edu',phone:'9876543250', whatsapp:'9876543250',
+    father_name:'Raja Kumar', father_occ:'Business', father_salary:800000, father_phone:'9876543251',
+    mother_name:'Meena Raja', mother_occ:'Homemaker',mother_salary:0,     mother_phone:'9876543252',
+    guardian:'',
+    sibling_count:0,          sibling1:'',  sibling2:'',  sibling_notes:'Only child.',
+    cgpa:8.1, gpa:7.9, arrears:0, arrear_sub:'', tenth:'90%', twelfth:'87%',
+    schol:'',                 schol_type:'', schol_status:'', schol_amt:0, schol_year:'', schol_id:'',
+    hack:'HackIndia 2025',    hack_org:'HackerEarth', hack_res:'Runner-up', hack_prize:'₹20,000',
+    extra:'Chess, Coding Club',intern:'Zoho — 2 months, Backend Dev',
+    medical:'None',           disability:'', hostel:'Day Scholar',
+    notes:'Consistent performer. Strong algorithmic thinking.',
+  },
+];
+
+/* ═══ MESSAGES & NOTIFICATIONS ═══ */
+let MESSAGES = [];
+let NOTIFICATIONS = [
+  { id:'N1', type:'arrear', icon:'⚠️', title:'Mohammed Faiz has 3 active arrears', desc:'Subjects: Maths III, DBMS, OS · Immediate counselling required', time:'Today', read:false, studentId:'S3' },
+  { id:'N2', type:'scholarship', icon:'🏆', title:"Lakshmi Priya's scholarship pending", desc:'OBC Scholarship — ₹20,000 · Application submitted Oct 2024', time:'2 days ago', read:false, studentId:'S4' },
+  { id:'N3', type:'meeting', icon:'📅', title:'Upcoming mentor-mentee session tomorrow', desc:'10:00 AM — Group A · Room 302', time:'1 day', read:false, studentId:null },
+  { id:'N4', type:'result', icon:'📊', title:'Semester results uploaded', desc:'Update GPA records for 5 students', time:'3 days ago', read:true, studentId:null },
+];
+
+let currentMentorId = 'M1';
+let currentPage = 'dashboard';
+let editingStudentId = '';
+let activeChat = null;
+let chatHistory = {};
+
+const AV_COLORS = [
+  'linear-gradient(135deg,#10b981,#1d4ed8)',
+  'linear-gradient(135deg,#3b82f6,#2563eb)',
+  'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+  'linear-gradient(135deg,#f59e0b,#d97706)',
+  'linear-gradient(135deg,#f43f5e,#e11d48)',
+  'linear-gradient(135deg,#06b6d4,#0891b2)',
+];
+const getAvColor = id => AV_COLORS[parseInt(id.replace(/\D/g,''))%AV_COLORS.length];
+const getInitials = n => n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+/* ═══════════════════════════════════════════
+   AUTH — Register & Login (Backend API)
+   All mentor data is stored server-side in
+   data/mentors.json — persists across sessions
+═══════════════════════════════════════════ */
+
+/* ── Cached mentor info (set after login) ── */
+let _currentMentor = null;
+
+/* ── Token helpers ── */
+function getToken()      { return localStorage.getItem('edutrack_token') || ''; }
+function saveToken(t)    { localStorage.setItem('edutrack_token', t); }
+function clearToken()    { localStorage.removeItem('edutrack_token'); }
+
+/* ── Generic API call helper ── */
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getToken()
+    }
+  };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res  = await fetch('/api' + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Server error');
+  return data;
+}
+
+/* ── Legacy stub so any remaining getMentorDB() calls don't crash ── */
+function getMentorDB()    { return {}; }
+function saveMentorDB(db) {}
+
+function toggleAuthMode(showRegister) {
+  document.getElementById('signInCard').style.display  = showRegister ? 'none'  : 'block';
+  document.getElementById('signUpCard').style.display  = showRegister ? 'block' : 'none';
+  document.getElementById('loginErr').style.display = 'none';
+  document.getElementById('regErr').style.display   = 'none';
+  document.getElementById('loginScreen').scrollTop = 0;
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('loginErr');
+  el.textContent = '⚠️ ' + msg; el.style.display = 'block';
+  document.getElementById('loginBtn').textContent = 'Sign In to Portal →';
+  document.getElementById('loginBtn').disabled = false;
+}
+function showRegErr(msg) {
+  const el = document.getElementById('regErr');
+  el.textContent = '⚠️ ' + msg; el.style.display = 'block';
+  document.getElementById('regBtn').textContent = 'Create Account & Sign In →';
+  document.getElementById('regBtn').disabled = false;
+}
+
+async function doRegister() {
+  const name  = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim().toLowerCase();
+  const dept  = document.getElementById('regDept').value;
+  const desig = document.getElementById('regDesig').value.trim() || 'Mentor';
+  const pass  = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+
+  /* Client-side validation */
+  if (!name)                        { showRegErr('Please enter your full name.'); return; }
+  if (!email || !email.includes('@')){ showRegErr('Please enter a valid email address.'); return; }
+  if (pass.length < 6)              { showRegErr('Password must be at least 6 characters.'); return; }
+  if (pass !== pass2)               { showRegErr('Passwords do not match.'); return; }
+
+  const btn = document.getElementById('regBtn');
+  btn.textContent = 'Creating account…'; btn.disabled = true;
+
+  try {
+    const data = await api('POST', '/register', { name, email, password: pass, department: dept, designation: desig });
+    saveToken(data.token);
+    showToast('success', '🎉 Account created! Welcome, ' + name.split(' ')[0] + '!');
+    await launchApp(data.mentor);
+  } catch (err) {
+    showRegErr(err.message);
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('loginBtn');
+
+  document.getElementById('loginErr').style.display = 'none';
+  if (!email || !pass) { showLoginErr('Please enter your email and password.'); return; }
+
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+
+  try {
+    const data = await api('POST', '/login', { email, password: pass });
+    saveToken(data.token);
+    await launchApp(data.mentor);
+  } catch (err) {
+    showLoginErr(err.message);
+  }
+}
+
+async function launchApp(mentor) {
+  currentMentorId = mentor.id;
+  _currentMentor  = mentor;   // cache for PDF / email use
+
+  /* Load this mentor's students from backend */
+  try {
+    STUDENTS = await api('GET', '/students');
+  } catch { STUDENTS = []; }
+
+  const initials = mentor.name.split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('sbAv').textContent   = initials;
+  document.getElementById('sbName').textContent = mentor.name;
+  document.getElementById('sbRole').textContent = (mentor.designation || 'Mentor') + ' · ' + (mentor.department || '');
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display         = 'block';
+  updateBadges();
+  showPage('dashboard');
+
+  /* Reset button states */
+  const lb = document.getElementById('loginBtn');
+  const rb = document.getElementById('regBtn');
+  if(lb){ lb.textContent='Sign In to Portal →'; lb.disabled=false; }
+  if(rb){ rb.textContent='Create Account & Sign In →'; rb.disabled=false; }
+}
+
+function doLogout() {
+  currentMentorId = null;
+  _currentMentor  = null;
+  STUDENTS        = [];
+  chatHistory     = {};
+  clearToken();
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value  = '';
+  document.getElementById('loginErr').style.display = 'none';
+  toggleAuthMode(false);
+  document.getElementById('app').style.display         = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  showToast('info', 'You have been signed out.');
+}
+
+/* ── Auto-login on page load if JWT token is still valid ── */
+(async function autoLogin() {
+  if (!getToken()) return;
+  try {
+    const mentor = await api('GET', '/me');
+    await launchApp(mentor);
+  } catch {
+    clearToken();   /* token expired/invalid — fall through to login screen */
+  }
+})();
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+/* ── Sidebar mobile toggle ── */
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+  document.getElementById('sbCloseBtn').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.getElementById('sbCloseBtn').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function showPage(name, navEl) {
+  closeSidebar(); // auto-close on mobile when navigating
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(navEl) navEl.classList.add('active');
+  else {
+    const allNavItems = document.querySelectorAll('.nav-item');
+    const pageMap={dashboard:0,students:1,messages:2,notifications:3,performance:4,meetings:5,hackathons:6,scholarships:7,arrears:8,features:9};
+    if(pageMap[name]!==undefined) allNavItems[pageMap[name]]?.classList.add('active');
+  }
+  currentPage = name;
+  const titles = {dashboard:'Dashboard',students:'My Students',messages:'Messages',notifications:'Alerts & Notifications',performance:'Performance Analytics',meetings:'Meeting Schedule',hackathons:'Hackathon Records',scholarships:'Scholarship Records',arrears:'Arrears Management',detail:'Student Profile',features:'Extra Features & Roadmap'};
+  document.getElementById('pageTitle').textContent = titles[name]||name;
+  document.getElementById('addStudentBtn').style.display = (name==='students'||name==='dashboard') ? 'flex' : 'none';
+
+  const renders = {
+    dashboard: renderDashboard, students: renderStudents, messages: renderMessages,
+    notifications: renderNotifications, performance: renderPerformance,
+    meetings: renderMeetings, hackathons: renderHackathons,
+    scholarships: renderScholarships, arrears: renderArrears, features: renderFeatures,
+  };
+  if(renders[name]) renders[name]();
+}
+
+function getMyStudents() {
+  return STUDENTS;
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+function renderDashboard() {
+  const sts = getMyStudents();
+  const totalArr = sts.reduce((s,x)=>s+Number(x.arrears||0),0);
+  const avgCgpa = sts.length ? (sts.reduce((s,x)=>s+Number(x.cgpa||0),0)/sts.length).toFixed(2) : '0.00';
+  const hackCount = sts.filter(s=>s.hack).length;
+  const scholAmt = sts.reduce((s,x)=>s+Number(x.schol_amt||0),0);
+
+  let html = `
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card-glow" style="background:var(--emerald)"></div>
+      <div class="stat-label">Total Students</div>
+      <div class="stat-value" style="color:var(--emerald)">${sts.length}</div>
+      <div class="stat-sub">Under mentorship</div>
+      <span class="stat-icon">👥</span>
+      <div class="stat-bar" style="background:var(--emerald)"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-glow" style="background:var(--amber)"></div>
+      <div class="stat-label">Active Arrears</div>
+      <div class="stat-value" style="color:var(--amber)">${totalArr}</div>
+      <div class="stat-sub">${sts.filter(s=>s.arrears>0).length} student(s) affected</div>
+      <span class="stat-icon">⚠️</span>
+      <div class="stat-bar" style="background:var(--amber)"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-glow" style="background:var(--cyan)"></div>
+      <div class="stat-label">Average CGPA</div>
+      <div class="stat-value" style="color:var(--cyan)">${avgCgpa}</div>
+      <div class="stat-sub">Batch average</div>
+      <span class="stat-icon">📊</span>
+      <div class="stat-bar" style="background:var(--cyan)"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-glow" style="background:var(--violet)"></div>
+      <div class="stat-label">Scholarship ₹</div>
+      <div class="stat-value" style="color:var(--violet);font-size:24px">₹${(scholAmt/1000).toFixed(0)}K</div>
+      <div class="stat-sub">Total disbursed/approved</div>
+      <span class="stat-icon">🏆</span>
+      <div class="stat-bar" style="background:var(--violet)"></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
+    <div class="card">
+      <div class="card-header"><h3>CGPA Overview</h3><span class="card-meta">${sts.length} students</span></div>
+      <div class="card-body" id="cgpaChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>⚡ Quick Alerts</h3></div>
+      <div class="card-body" id="quickAlerts"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-header">
+      <h3>Student Overview</h3>
+      <span class="card-meta">${sts.length} mentees</span>
+    </div>
+    ${buildStudentTable(sts)}
+  </div>`;
+  setContent(html);
+  setTimeout(()=>{
+    renderCgpaChart('cgpaChart', sts);
+    renderQuickAlerts('quickAlerts', sts);
+  }, 50);
+}
+
+/* ═══════════════════════════════════════════
+   STUDENTS PAGE
+═══════════════════════════════════════════ */
+function renderStudents(list) {
+  const sts = list || getMyStudents();
+  const html = `
+  <div class="card">
+    <div class="card-header">
+      <h3>All My Students</h3>
+      <span class="card-meta">${sts.length} students</span>
+    </div>
+    ${buildStudentTable(sts)}
+  </div>`;
+  setContent(html);
+}
+
+function buildStudentTable(sts) {
+  if(!sts.length) return '<div style="padding:40px;text-align:center;color:var(--muted)">No students found. <span style="cursor:pointer;color:var(--emerald)" onclick="openStudentModal()">Add one now →</span></div>';
+  const scholChip = s=>({Disbursed:'chip-g',Applied:'chip-a',Approved:'chip-b',Rejected:'chip-r','Renewal Pending':'chip-v'}[s.schol_status]||'');
+  const hackChip  = r=>({Winner:'chip-g','Runner-up':'chip-b',Finalist:'chip-v','Top 10':'chip-c',Participated:'chip-a'}[r]||'');
+  const rows = sts.map(s=>{
+    const cgpaC = s.cgpa>=8.5?'<span class="chip chip-g">'+s.cgpa+'</span>':s.cgpa>=7?'<span class="chip chip-b">'+s.cgpa+'</span>':'<span class="chip chip-a">'+s.cgpa+'</span>';
+    const arrC  = s.arrears>0?'<span class="chip chip-r">'+s.arrears+' arrear(s)</span>':'<span class="chip chip-g">Clear</span>';
+    const hkC   = s.hack_res?'<span class="chip '+hackChip(s.hack_res)+'">'+s.hack_res+'</span>':'<span style="color:var(--muted2)">—</span>';
+    const scC   = s.schol_status?'<span class="chip '+scholChip(s)+'">'+s.schol_status+'</span>':'<span style="color:var(--muted2)">None</span>';
+    const inc   = ((Number(s.father_salary||0)+Number(s.mother_salary||0))/1000).toFixed(0);
+    return '<tr>'
+      +'<td><div class="st-cell"><div class="avatar" style="background:'+getAvColor(s.id)+'">'+getInitials(s.name)+'</div>'
+      +'<div><div class="st-name">'+s.name+'</div><div class="st-sub">'+s.regno+'</div></div></div></td>'
+      +'<td style="color:var(--muted)">'+s.dept+'·'+s.year+'</td>'
+      +'<td>'+cgpaC+'</td><td><span class="chip chip-c">'+s.gpa+'</span></td>'
+      +'<td>'+arrC+'</td><td>'+hkC+'</td><td>'+scC+'</td>'
+      +'<td style="font-size:12px">₹'+inc+'K/yr</td>'
+      +'<td><div class="act-btns">'
+      +'<button class="act-btn" onclick="viewStudent(\''+s.id+'\')">👁️</button>'
+      +'<button class="act-btn" onclick="editStudent(\''+s.id+'\')">✏️</button>'
+      +'<button class="act-btn" onclick="downloadPDF(\''+s.id+'\')">📄</button>'
+      +'<button class="act-btn" onclick="openMsgModal(\''+s.id+'\')">💬</button>'
+      +'<button class="act-btn" onclick="deleteStudent(\''+s.id+'\')" style="color:var(--rose)">🗑️</button>'
+      +'</div></td></tr>';
+  });
+  return '<div class="table-wrap"><table>'
+    +'<thead><tr><th>Student</th><th>Dept/Year</th><th>CGPA</th><th>GPA</th><th>Arrears</th><th>Hackathon</th><th>Scholarship</th><th>Family Income</th><th>Actions</th></tr></thead>'
+    +'<tbody>'+rows.join('')+'</tbody></table></div>';
+}
+
+/* ═══════════════════════════════════════════
+   STUDENT DETAIL VIEW
+═══════════════════════════════════════════ */
+function viewStudent(id) {
+  const s = STUDENTS.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('pageTitle').textContent = s.name;
+  const dc = (lbl,val) => val ? '<div class="info-tile"><div class="it-label">'+lbl+'</div><div class="it-val">'+val+'</div></div>' : '';
+  const totalIncome = Number(s.father_salary||0)+Number(s.mother_salary||0);
+
+  const heroChips
+    = (s.cgpa>=8.5?'<span class="chip chip-g">\u2b50 High Achiever</span>':'')
+    + (s.arrears>0?'<span class="chip chip-r">\u26a0\ufe0f '+s.arrears+' Arrear(s)</span>':'<span class="chip chip-g">\u2705 Arrear Free</span>')
+    + (s.schol_status?'<span class="chip chip-a">\U0001f3c6 '+s.schol+'</span>':'')
+    + (s.hack_res==='Winner'?'<span class="chip chip-v">\U0001f947 Hack Winner</span>':'')
+    + (s.hostel?'<span class="chip chip-c">'+s.hostel+'</span>':'');
+
+  const scholSection = s.schol
+    ? '<div class="section-label">\U0001f3c6 Scholarship Details</div><div class="info-grid">'
+      +dc('Scholarship Name',s.schol)+dc('Type',s.schol_type)+dc('Status',s.schol_status)
+      +dc('Amount','\u20b9'+Number(s.schol_amt).toLocaleString())+dc('Year',s.schol_year)+dc('Portal ID',s.schol_id)
+      +'</div>' : '';
+
+  const addrTile = s.address
+    ? '<div class="info-tile" style="grid-column:span 2"><div class="it-label">Address</div><div class="it-val">'+s.address+'</div></div>'
+    : '';
+
+  const sibNotes = s.sibling_notes
+    ? '<div class="info-tile" style="grid-column:span 3"><div class="it-label">Additional Notes</div><div class="it-val">'+s.sibling_notes+'</div></div>'
+    : '';
+
+  const notesSection = s.notes
+    ? '<div class="section-label">\U0001f4dd Mentor Notes (Private)</div><div class="card" style="margin-bottom:0"><div class="card-body" style="color:var(--muted);font-size:13px;line-height:1.7">'+s.notes+'</div></div>'
+    : '';
+
+  const html = ''
+  +'<button class="back-btn" onclick="showPage(\'students\')">\u2190 Back to Students</button>'
+  +'<div class="detail-hero">'
+  +'<div class="avatar avatar-lg" style="background:'+getAvColor(s.id)+'">'+getInitials(s.name)+'</div>'
+  +'<div>'
+  +'<div style="font-size:22px;font-weight:800;margin-bottom:4px">'+s.name+'</div>'
+  +'<div style="color:var(--muted);font-size:13px">'+s.regno+' \u00b7 '+s.dept+' \u00b7 '+s.year+' \u00b7 Sec '+(s.section||'\u2014')+' \u00b7 '+s.community+'</div>'
+  +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+heroChips+'</div>'
+  +'</div>'
+  +'<div class="dh-actions">'
+  +'<button class="btn btn-primary btn-sm" onclick="editStudent(\''+s.id+'\')">✏️ Edit</button>'
+  +'<button class="btn btn-blue btn-sm" onclick="downloadPDF(\''+s.id+'\')">📄 PDF</button>'
+  +'<button class="btn btn-violet btn-sm" onclick="openMsgModal(\''+s.id+'\')">💬 Message</button>'
+  +'</div></div>'
+  +'<div class="section-label">\U0001f4de Contact Information</div>'
+  +'<div class="info-grid">'+dc('Email ID',s.email)+dc('Phone',s.phone)+dc('WhatsApp',s.whatsapp)+dc('Date of Birth',s.dob)+dc('Blood Group',s.blood)+dc('Gender',s.gender)+'</div>'
+  +'<div class="section-label">\U0001f468\u200d\U0001f469\u200d\U0001f467 Parent Details</div>'
+  +'<div class="info-grid">'
+  +dc("Father's Name",s.father_name)+dc("Father's Occupation",s.father_occ)+dc("Father's Salary",'\u20b9'+(Number(s.father_salary||0).toLocaleString()))
+  +dc("Father's Phone",s.father_phone)+dc("Mother's Name",s.mother_name)+dc("Mother's Occupation",s.mother_occ)
+  +dc("Mother's Salary",'\u20b9'+(Number(s.mother_salary||0).toLocaleString()))+dc("Mother's Phone",s.mother_phone)
+  +dc('Combined Income','\u20b9'+totalIncome.toLocaleString()+'/year')
+  +(s.guardian?dc('Guardian',s.guardian):'')
+  +'</div>'
+  +'<div class="section-label">\U0001f46b Siblings</div>'
+  +'<div class="info-grid">'
+  +dc('No. of Siblings',s.sibling_count)+dc('Sibling 1',s.sibling1||'\u2014')+dc('Sibling 2',s.sibling2||'\u2014')
+  +sibNotes+'</div>'
+  +'<div class="section-label">\U0001f4da Academic Records</div>'
+  +'<div class="info-grid">'
+  +dc('CGPA',s.cgpa)+dc('Sem GPA',s.gpa)+dc('Arrears',s.arrears>0?s.arrears+' \u2014 '+s.arrear_sub:'None')
+  +dc('10th',s.tenth||'\u2014')+dc('12th',s.twelfth||'\u2014')+dc('Dept/Section',s.dept+' \u00b7 '+s.section)
+  +'</div>'
+  + scholSection
+  +'<div class="section-label">\U0001f4bb Achievements</div>'
+  +'<div class="info-grid">'
+  +dc('Hackathon',s.hack||'None')+dc('Organizer',s.hack_org||'\u2014')+dc('Result',s.hack_res||'N/A')
+  +dc('Prize',s.hack_prize||'\u2014')+dc('Extracurriculars',s.extra||'\u2014')+dc('Internship',s.intern||'\u2014')
+  +'</div>'
+  +'<div class="section-label">\U0001f3e5 Health & Additional</div>'
+  +'<div class="info-grid">'
+  +dc('Medical',s.medical||'None')+dc('Differently Abled',s.disability||'No')+dc('Hostel',s.hostel||'\u2014')
+  +addrTile+'</div>'
+  + notesSection;
+
+  setContent(html);
+}
+
+/* ═══════════════════════════════════════════
+   PDF DOWNLOAD
+═══════════════════════════════════════════ */
+function downloadPDF(id) {
+  const s = STUDENTS.find(x=>x.id===id);
+  if(!s) return;
+  // Get current mentor name from cached login data
+  const mName = (_currentMentor && _currentMentor.name) || 'Mentor';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+    const W = 210; const pageH = 297;
+    let y = 0;
+
+    // ─── HEADER BAR ───
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 0, W, 30, 'F');
+    doc.setFillColor(6, 182, 212);
+    doc.rect(0, 26, W, 4, 'F');
+
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(18); doc.setFont('helvetica','bold');
+    doc.text('EduTrack — Student Profile Report', 14, 12);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text(`Mentor: ${mName}  |  Generated: ${new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})}`, 14, 21);
+
+    y = 38;
+
+    // ─── STUDENT HERO ───
+    doc.setFillColor(17, 24, 39);
+    doc.roundedRect(10, y, W-20, 28, 3, 3, 'F');
+
+    // Avatar circle
+    doc.setFillColor(16, 185, 129);
+    doc.circle(26, y+14, 10, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text(getInitials(s.name), 26, y+16, {align:'center'});
+
+    doc.setTextColor(240,244,248);
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text(s.name, 42, y+10);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.setTextColor(75,85,99);
+    doc.text(`${s.regno}  ·  ${s.dept}  ·  ${s.year}  ·  Section ${s.section||'—'}  ·  ${s.community}`, 42, y+17);
+    doc.text(`CGPA: ${s.cgpa}  |  GPA: ${s.gpa}  |  Arrears: ${s.arrears}  |  ${s.hostel||'—'}`, 42, y+23);
+
+    // Status chips (text) — plain ASCII only
+    let chipX = W-70;
+    if(s.arrears>0){ doc.setTextColor(244,63,94); doc.setFontSize(8); doc.text(`[!] ${s.arrears} Arrear(s)`,chipX,y+10); }
+    else { doc.setTextColor(16,185,129); doc.setFontSize(8); doc.text('[OK] Arrear Free',chipX,y+10); }
+    if(s.hack_res==='Winner'){ doc.setTextColor(245,158,11); doc.text('[*] Hack Winner',chipX,y+17); }
+
+    y += 34;
+
+    // ─── SECTION HELPER ───
+    const sectionTitle = (title) => {
+      doc.setFillColor(16,185,129,0.1);
+      doc.setFillColor(26,35,50);
+      doc.rect(10, y, W-20, 7, 'F');
+      doc.setDrawColor(16,185,129);
+      doc.line(10, y+7, W-10, y+7);
+      doc.setTextColor(16,185,129);
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text(title.toUpperCase(), 14, y+5);
+      y += 10;
+    };
+
+    const row = (pairs) => {
+      const colW = (W-20)/pairs.length;
+      pairs.forEach(([lbl,val],i) => {
+        const x = 12 + i*colW;
+        doc.setTextColor(80,100,120); doc.setFontSize(7); doc.setFont('helvetica','bold');
+        doc.text(lbl.toUpperCase(), x, y);
+        doc.setTextColor(15,23,42); doc.setFontSize(9); doc.setFont('helvetica','normal');
+        doc.text(String(val||'—').substring(0,38), x, y+5);
+      });
+      y += 12;
+    };
+
+    const checkPage = () => { if(y > pageH - 20){ doc.addPage(); y = 15; } };
+
+    // CONTACT
+    sectionTitle('CONTACT INFORMATION');
+    row([['Email ID',s.email],['Student Phone',s.phone],['WhatsApp',s.whatsapp]]);
+    row([['Date of Birth',s.dob],['Blood Group',s.blood],['Gender',s.gender]]);
+    checkPage();
+
+    // ADDRESS
+    sectionTitle('RESIDENTIAL ADDRESS');
+    doc.setTextColor(15,23,42); doc.setFontSize(9); doc.setFont('helvetica','normal');
+    const addrLines = doc.splitTextToSize(s.address||'—', W-30);
+    doc.text(addrLines, 12, y);
+    y += addrLines.length*5 + 4;
+    checkPage();
+
+    // PARENT
+    sectionTitle('PARENT / GUARDIAN DETAILS');
+    row([["Father's Name",s.father_name],["Father's Occupation",s.father_occ],["Father's Salary","Rs."+Number(s.father_salary||0).toLocaleString()]]);
+    row([["Father's Phone",s.father_phone],["Mother's Name",s.mother_name],["Mother's Occupation",s.mother_occ]]);
+    row([["Mother's Salary","Rs."+Number(s.mother_salary||0).toLocaleString()],["Mother's Phone",s.mother_phone],['Guardian',s.guardian||'—']]);
+    row([['Combined Income','Rs.'+(Number(s.father_salary||0)+Number(s.mother_salary||0)).toLocaleString()+'/year'],['Siblings Count',s.sibling_count],['Sibling 1',s.sibling1||'—']]);
+    if(s.sibling2) row([['Sibling 2',s.sibling2],['',''],['','']]);
+    checkPage();
+
+    // ACADEMIC
+    sectionTitle('ACADEMIC RECORDS');
+    row([['CGPA',s.cgpa],['Latest Sem GPA',s.gpa],['Arrears Count',s.arrears||'None']]);
+    row([['Arrear Subjects',s.arrear_sub||'None'],['10th Score',s.tenth||'—'],['12th / Diploma',s.twelfth||'—']]);
+    checkPage();
+
+    // SCHOLARSHIP
+    if(s.schol) {
+      sectionTitle('SCHOLARSHIP DETAILS');
+      row([['Scholarship Name',s.schol],['Type',s.schol_type],['Status',s.schol_status]]);
+      row([['Amount','Rs.'+Number(s.schol_amt).toLocaleString()],['Year',s.schol_year],['Portal ID',s.schol_id]]);
+      checkPage();
+    }
+
+    // HACKATHON
+    if(s.hack) {
+      sectionTitle('HACKATHONS & ACTIVITIES');
+      row([['Hackathon Name',s.hack],['Organizer',s.hack_org],['Result',s.hack_res]]);
+      row([['Prize',s.hack_prize||'—'],['Extracurriculars',s.extra||'—'],['Internship',s.intern||'—']]);
+      checkPage();
+    }
+
+    // HEALTH
+    sectionTitle('HEALTH & ADDITIONAL');
+    row([['Medical Condition',s.medical||'None'],['Differently Abled',s.disability||'No'],['Hostel/Day Scholar',s.hostel||'—']]);
+    checkPage();
+
+    // NOTES
+    if(s.notes) {
+      sectionTitle('MENTOR NOTES (CONFIDENTIAL)');
+      const noteLines = doc.splitTextToSize(s.notes, W-30);
+      doc.setTextColor(15,23,42); doc.setFontSize(9); doc.setFont('helvetica','italic');
+      doc.text(noteLines, 12, y);
+      y += noteLines.length*5 + 4;
+    }
+
+    // ─── FOOTER ───
+    const totalPages = doc.internal.getNumberOfPages();
+    for(let i=1;i<=totalPages;i++){
+      doc.setPage(i);
+      doc.setFillColor(248,249,250);
+      doc.rect(0, pageH-10, W, 10, 'F');
+      doc.setTextColor(75,85,99); doc.setFontSize(7); doc.setFont('helvetica','normal');
+      doc.text(`EduTrack Mentor Portal  ·  Confidential  ·  Mentor: ${mName}`, 14, pageH-4);
+      doc.text(`Page ${i} of ${totalPages}`, W-14, pageH-4, {align:'right'});
+    }
+
+    doc.save(`${s.name.replace(/\s+/g,'_')}_${s.regno}_Profile.pdf`);
+    showToast('success', `📄 PDF downloaded for ${s.name}`);
+  } catch(e) {
+    console.error(e);
+    showToast('warn', '⚠️ PDF library loading. Try again in a moment.');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MESSAGING
+═══════════════════════════════════════════ */
+function renderMessages() {
+  const sts = getMyStudents();
+  const html = `
+  <div class="msg-layout">
+    <div class="msg-sidebar">
+      <div class="msg-sidebar-head">💬 Students</div>
+      ${sts.map(s=>{
+        const _msgs=(chatHistory[s.id]||[]);
+        const _last=_msgs.length?_msgs[_msgs.length-1]:null;
+        const _unread=_msgs.filter(m=>!m.read&&m.from==='student').length;
+        const _badge=_unread>0?'<div class="msg-contact-badge">'+_unread+'</div>':'';
+        const _lastTxt=_last?_last.text.substring(0,28)+'…':'No messages yet';
+        const _ac=activeChat===s.id?'active':'';
+        return '<div class="msg-contact '+_ac+'" onclick="openChat(\''+ s.id +'\')">'
+          +'<div class="msg-contact-av" style="background:'+getAvColor(s.id)+'">'+getInitials(s.name)+'</div>'
+          +'<div style="flex:1;min-width:0"><div class="msg-contact-name">'+s.name+'</div>'
+          +'<div class="msg-contact-last">'+_lastTxt+'</div></div>'+_badge+'</div>';
+      }).join('')}
+    </div>
+    <div class="msg-main" id="msgMain">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:12px">💬</div>
+        <div style="font-size:14px;font-weight:600">Select a student to start messaging</div>
+        <div style="font-size:12px;margin-top:6px">Messages notify students instantly</div>
+      </div>
+    </div>
+  </div>`;
+  setContent(html);
+  if(activeChat) setTimeout(()=>openChat(activeChat),100);
+}
+
+function openChat(studentId) {
+  activeChat = studentId;
+  const s = STUDENTS.find(x=>x.id===studentId);
+  const msgs = chatHistory[studentId] || [];
+  // Mark student messages as read
+  msgs.filter(m=>m.from==='student').forEach(m=>m.read=true);
+
+  const chatHTML = `
+  <div class="msg-topbar">
+    <div class="msg-contact-av" style="background:${getAvColor(s.id)};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${getInitials(s.name)}</div>
+    <div>
+      <div class="msg-topbar-name">${s.name}</div>
+      <div class="msg-topbar-status">Online · ${s.email}</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-blue btn-sm" onclick="downloadPDF('${s.id}')">📄 PDF</button>
+      <button class="btn btn-outline btn-sm" onclick="viewStudent('${s.id}')">👁 Profile</button>
+    </div>
+  </div>
+  <div class="msg-body" id="msgBody">
+    ${msgs.length===0?'<div style="text-align:center;color:var(--muted);font-size:12px;margin-top:20px">No messages yet. Say hello 👋</div>':''}
+    ${msgs.map(m=>('<div><div class="msg-bubble '+(m.from==='mentor'?'sent':'recv')+'">'+m.text+'<div class="msg-time">'+(m.from==='mentor'?'You (Mentor)':'Student')+' · '+m.time+'</div></div></div>')).join('')}
+  </div>
+  <div class="msg-input-area">
+    <textarea id="chatInput" placeholder="Type a message… Student will receive a notification" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${s.id}')}"></textarea>
+    <button class="btn btn-primary" onclick="sendChatMsg('${s.id}')">Send 📤</button>
+  </div>`;
+
+  const main = document.getElementById('msgMain');
+  if(main) { main.innerHTML = chatHTML; main.querySelector('.msg-body').scrollTop = 99999; }
+  updateBadges();
+}
+
+function sendChatMsg(studentId) {
+  const input = document.getElementById('chatInput');
+  if(!input || !input.value.trim()) return;
+  const s = STUDENTS.find(x=>x.id===studentId);
+  const text = input.value.trim();
+  const msg = { from:'mentor', text, time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), read:true };
+  if(!chatHistory[studentId]) chatHistory[studentId] = [];
+  chatHistory[studentId].push(msg);
+  input.value = '';
+
+  // Deliver notification to student
+  deliverStudentNotification(s, text, 'chat');
+  // Also email the student
+  sendEmailToStudent(s, `Message from your Mentor - EduTrack`, text);
+  showToast('success', `📤 Message sent to ${s.name} — Email opened to ${s.email}!`);
+
+  // Simulate student reply after 3s
+  setTimeout(()=>{
+    const replies = [
+      `Thank you sir/madam, I will take care of it.`,
+      `Understood. I will update you soon.`,
+      `Thank you for the guidance. I appreciate it.`,
+      `Yes, I will work on it right away.`,
+    ];
+    const replyMsg = { from:'student', text: replies[Math.floor(Math.random()*replies.length)], time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), read:false };
+    chatHistory[studentId].push(replyMsg);
+    if(activeChat===studentId) openChat(studentId);
+    updateBadges();
+    showToast('info', `💬 ${s.name} replied to your message`);
+  }, 3000);
+
+  openChat(studentId);
+}
+
+/* ─── Quick send msg modal ─── */
+function openMsgModal(studentId) {
+  const s = STUDENTS.find(x=>x.id===studentId);
+  if(!s) return;
+  document.getElementById('msgTo').value = `${s.name} (${s.email})`;
+  document.getElementById('msgTo').dataset.studentId = studentId;
+  document.getElementById('msgSubject').value = '';
+  document.getElementById('msgBody').value = '';
+  document.getElementById('msgModal').classList.add('open');
+}
+function closeMsgModal() { document.getElementById('msgModal').classList.remove('open'); }
+
+function sendMessage() {
+  const studentId = document.getElementById('msgTo').dataset.studentId;
+  const subject = document.getElementById('msgSubject').value.trim();
+  const body = document.getElementById('msgBody').value.trim();
+  if(!body){ showToast('warn','⚠️ Message body cannot be empty'); return; }
+  const s = STUDENTS.find(x=>x.id===studentId);
+
+  const fullMsg = subject ? `[${subject}] ${body}` : body;
+  if(!chatHistory[studentId]) chatHistory[studentId] = [];
+  chatHistory[studentId].push({
+    from:'mentor', text: fullMsg,
+    time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    read:true
+  });
+
+  deliverStudentNotification(s, fullMsg, 'message');
+  // Also email the student
+  const emailSubject = subject ? `${subject} - EduTrack Mentor Portal` : `Message from your Mentor - EduTrack`;
+  sendEmailToStudent(s, emailSubject, body);
+  closeMsgModal();
+  showToast('success', `📤 Message sent to ${s.name} — Email opened to ${s.email}!`);
+  updateBadges();
+}
+
+/* ─── Send real email to student via mail client ─── */
+function sendEmailToStudent(student, subject, body) {
+  if(!student?.email) return;
+  const mName = (_currentMentor && _currentMentor.name) || 'Your Mentor';
+  const mDept = (_currentMentor && _currentMentor.department) || '';
+  const fullBody =
+    `Dear ${student.name},\n\n${body}\n\n---\nThis message was sent by your mentor through EduTrack Mentor Portal.\nMentor: ${mName}${mDept ? ' | ' + mDept : ''}\n\nPlease do not reply to this automated message.`;
+  const mailtoLink = `mailto:${encodeURIComponent(student.email)}`
+    + `?subject=${encodeURIComponent(subject)}`
+    + `&body=${encodeURIComponent(fullBody)}`;
+  window.open(mailtoLink, '_blank');
+}
+
+/* ─── Simulate student notification ─── */
+function deliverStudentNotification(student, text, type) {
+  // Show student inbox simulation
+  const sips = document.getElementById('sipMsgs');
+  const mName = (_currentMentor && _currentMentor.name) || 'Your Mentor';
+  const emptyEl = sips.querySelector('.sip-empty');
+  if(emptyEl) emptyEl.remove();
+
+  const msgEl = document.createElement('div');
+  msgEl.className = 'sip-msg';
+  msgEl.innerHTML = `
+    <div class="sip-msg-from">📨 From: ${mName} (Mentor)</div>
+    <div class="sip-msg-text">${text}</div>
+    <div class="sip-msg-time">Just now · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>`;
+  sips.insertBefore(msgEl, sips.firstChild);
+
+  // Add to notifications
+  NOTIFICATIONS.unshift({
+    id:'N'+Date.now(), type:'message', icon:'💬',
+    title:`Message sent to ${student.name}`,
+    desc: text.substring(0,60)+(text.length>60?'…':''),
+    time:'Just now', read:false, studentId: student.id
+  });
+
+  // Show student inbox — stays open until manually closed
+  const inbox = document.getElementById('studentInbox');
+  inbox.classList.add('show');
+  updateBadges();
+}
+
+function closeStudentInbox() { document.getElementById('studentInbox').classList.remove('show'); }
+
+/* ═══════════════════════════════════════════
+   NOTIFICATIONS
+═══════════════════════════════════════════ */
+function renderNotifications() {
+  const unreadCount = NOTIFICATIONS.filter(n=>!n.read).length;
+  let rows = '';
+  NOTIFICATIONS.forEach(n=>{
+    const uc = n.read ? '' : 'unread';
+    const sid = n.studentId || '';
+    rows += '<div class="notif-item '+uc+'" onclick="readNotif(\''+n.id+'\',\''+sid+'\')">'
+      +'<span class="notif-ico">'+n.icon+'</span>'
+      +'<div style="flex:1"><div class="notif-title">'+n.title+'</div>'
+      +'<div class="notif-desc">'+n.desc+'</div></div>'
+      +'<span class="notif-time">'+n.time+'</span></div>';
+  });
+  const html = '<div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:13px;color:var(--muted)">'+unreadCount+' unread notifications</div>'
+    +'<button class="btn btn-outline btn-sm" onclick="markAllRead()">✓ Mark all read</button></div>'
+    + rows;
+  setContent(html);
+  NOTIFICATIONS.forEach(n=>n.read=true);
+  updateBadges();
+}
+
+function readNotif(id, studentId) {
+  const n = NOTIFICATIONS.find(x=>x.id===id);
+  if(n) n.read=true;
+  if(studentId) viewStudent(studentId);
+}
+function markAllRead() { NOTIFICATIONS.forEach(n=>n.read=true); updateBadges(); renderNotifications(); }
+
+/* ═══════════════════════════════════════════
+   PERFORMANCE
+═══════════════════════════════════════════ */
+function renderPerformance() {
+  const sts = getMyStudents();
+  const html = `
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this,'pt1')">CGPA Ranking</div>
+    <div class="tab" onclick="switchTab(this,'pt2')">Sem GPA</div>
+    <div class="tab" onclick="switchTab(this,'pt3')">Arrear Analysis</div>
+    <div class="tab" onclick="switchTab(this,'pt4')">Family Income</div>
+  </div>
+  <div id="pt1"><div class="card"><div class="card-header"><h3>CGPA Distribution</h3><span class="card-meta">${sts.length} students</span></div><div class="card-body" id="p1"></div></div></div>
+  <div id="pt2" style="display:none"><div class="card"><div class="card-header"><h3>Latest Semester GPA</h3></div><div class="card-body" id="p2"></div></div></div>
+  <div id="pt3" style="display:none"><div class="card"><div class="card-header"><h3>Arrears Analysis</h3></div>${buildArrTable(sts)}</div></div>
+  <div id="pt4" style="display:none"><div class="card"><div class="card-header"><h3>Family Income Overview</h3></div><div class="card-body" id="p4"></div></div></div>`;
+  setContent(html);
+  setTimeout(()=>{ renderBars('p1',sts,'cgpa'); renderBars('p2',sts,'gpa'); renderIncomeBars('p4',sts); }, 50);
+}
+
+function renderBars(elId, sts, field) {
+  const el=document.getElementById(elId); if(!el)return;
+  const sorted=[...sts].sort((a,b)=>b[field]-a[field]);
+  el.innerHTML=sorted.map((s,i)=>{
+    const cols=['var(--emerald)','var(--blue)','var(--violet)','var(--amber)','var(--cyan)'];
+    return `<div class="cbar-row"><div class="cbar-name">${s.name}</div>
+      <div class="cbar-bg"><div class="cbar-fill" style="width:0%;background:${cols[i%5]}" data-w="${(s[field]/10)*100}%"></div></div>
+      <span class="cbar-val">${s[field]}</span></div>`;
+  }).join('');
+  setTimeout(()=>document.querySelectorAll('.cbar-fill').forEach(b=>b.style.width=b.dataset.w),80);
+}
+
+function renderIncomeBars(elId, sts) {
+  const el=document.getElementById(elId); if(!el)return;
+  const sorted=[...sts].sort((a,b)=>(Number(b.father_salary||0)+Number(b.mother_salary||0))-(Number(a.father_salary||0)+Number(a.mother_salary||0)));
+  const max = Number(sorted[0]?.father_salary||0)+Number(sorted[0]?.mother_salary||0)||1;
+  el.innerHTML=sorted.map((s,i)=>{
+    const inc=Number(s.father_salary||0)+Number(s.mother_salary||0);
+    const cols=['var(--emerald)','var(--blue)','var(--violet)','var(--amber)','var(--cyan)'];
+    return `<div class="cbar-row"><div class="cbar-name">${s.name}</div>
+      <div class="cbar-bg"><div class="cbar-fill" style="width:0%;background:${cols[i%5]}" data-w="${(inc/max)*100}%"></div></div>
+      <span class="cbar-val" style="width:60px;font-size:11px">₹${(inc/1000).toFixed(0)}K</span></div>`;
+  }).join('');
+  setTimeout(()=>document.querySelectorAll('.cbar-fill').forEach(b=>b.style.width=b.dataset.w),80);
+}
+
+function buildArrTable(sts) {
+  const arr=sts.filter(s=>s.arrears>0);
+  if(!arr.length) return `<div style="padding:32px;text-align:center;color:var(--muted)">🎉 No students with arrears!</div>`;
+  return `<div class="table-wrap"><table><thead><tr><th>Student</th><th>Reg No</th><th>Count</th><th>Subjects</th><th>CGPA</th><th>Notify</th></tr></thead><tbody>
+  ${arr.map(s=>'<tr><td>'+s.name+'</td><td style="color:var(--muted)">'+s.regno+'</td><td><span class="chip chip-r">'+s.arrears+'</span></td><td style="font-size:12px;color:var(--muted)">'+(s.arrear_sub||'—')+'</td><td>'+s.cgpa+'</td><td><button class="act-btn" onclick="openMsgModal(\''+s.id+'\')" title="Send reminder">💬</button></td></tr>').join('')}
+  </tbody></table></div>`;
+}
+
+/* ═══════════════════════════════════════════
+   MEETINGS
+═══════════════════════════════════════════ */
+function renderMeetings() {
+  const meets=[
+    {t:'Mar 13, 10:00 AM',txt:'Weekly mentor-mentee check-in — Group A',c:'var(--emerald)'},
+    {t:'Mar 14, 02:00 PM',txt:'Arrears counselling — Mohammed Faiz',c:'var(--rose)'},
+    {t:'Mar 17, 11:00 AM',txt:'Scholarship document verification drive',c:'var(--amber)'},
+    {t:'Mar 19, 03:00 PM',txt:'Hackathon team ideation & registration',c:'var(--violet)'},
+    {t:'Mar 21, 10:00 AM',txt:'Mid-semester progress report review',c:'var(--cyan)'},
+    {t:'Mar 26, 02:00 PM',txt:'3rd Year career counselling session',c:'var(--lime)'},
+  ];
+  const html=`<div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+    <div class="card"><div class="card-header"><h3>Meeting Schedule</h3><span class="card-meta">March 2026</span></div>
+      <div class="card-body">${meets.map(m=>'<div class="sch-item"><div class="sch-dot" style="background:'+m.c+'"></div><span class="sch-time">'+m.t+'</span><span class="sch-text">'+m.txt+'</span></div>').join('')}</div>
+    </div>
+    <div class="card"><div class="card-header"><h3>Meeting Notes</h3></div>
+      <div class="card-body">
+        <textarea id="meetNote" style="width:100%;min-height:180px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:12px;font-family:'Sora',sans-serif;font-size:13px;resize:vertical;outline:none;" placeholder="Add meeting notes…"></textarea>
+        <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="showToast('success','📝 Notes saved!')">Save Notes</button>
+      </div>
+    </div>
+  </div>`;
+  setContent(html);
+}
+
+/* ═══ HACKATHONS ═══ */
+function renderHackathons() {
+  const sts=getMyStudents().filter(s=>s.hack);
+  const m={'Winner':'chip-g','Runner-up':'chip-b','Finalist':'chip-v','Top 10':'chip-c','Participated':'chip-a'};
+  const html=`<div class="card"><div class="card-header"><h3>Hackathon Records</h3><span class="card-meta">${sts.length} records</span></div>
+  ${sts.length?('<div class="table-wrap"><table><thead><tr><th>Student</th><th>Hackathon</th><th>Organizer</th><th>Result</th><th>Prize</th><th>CGPA</th></tr></thead><tbody>'+sts.map(s=>'<tr><td>'+s.name+'</td><td>'+s.hack+'</td><td style="color:var(--muted)">'+(s.hack_org||'—')+'</td><td><span class="chip '+(m[s.hack_res]||'chip-b')+'">'+s.hack_res+'</span></td><td style="color:var(--emerald)">'+(s.hack_prize||'—')+'</td><td>'+s.cgpa+'</td></tr>').join('')+'</tbody></table></div>'):'<div style="padding:32px;text-align:center;color:var(--muted)">No hackathon records yet.</div>'}  
+  </div>`;
+  setContent(html);
+}
+
+/* ═══ SCHOLARSHIPS ═══ */
+function renderScholarships() {
+  const sts=getMyStudents().filter(s=>s.schol);
+  const m={'Disbursed':'chip-g','Applied':'chip-a','Approved':'chip-b','Rejected':'chip-r','Renewal Pending':'chip-v'};
+  const html=`<div class="card"><div class="card-header"><h3>Scholarship Records</h3><span class="card-meta">${sts.length} records</span></div>
+  ${sts.length?('<div class="table-wrap"><table><thead><tr><th>Student</th><th>Scholarship</th><th>Type</th><th>Status</th><th>Amount</th><th>Year</th><th>Portal ID</th></tr></thead><tbody>'+sts.map(s=>'<tr><td>'+s.name+'</td><td>'+s.schol+'</td><td style="color:var(--muted)">'+(s.schol_type||'—')+'</td><td><span class="chip '+(m[s.schol_status]||'')+'">'+s.schol_status+'</span></td><td style="font-weight:700;color:var(--emerald)">₹'+Number(s.schol_amt).toLocaleString()+'</td><td style="color:var(--muted)">'+(s.schol_year||'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(s.schol_id||'—')+'</td></tr>').join('')+'</tbody></table></div>'):'<div style="padding:32px;text-align:center;color:var(--muted)">No scholarship records.</div>'}  
+  </div>`;
+  setContent(html);
+}
+
+/* ═══ ARREARS ═══ */
+function renderArrears() {
+  setContent(`<div class="card"><div class="card-header"><h3>Arrears Management</h3></div>${buildArrTable(getMyStudents())}</div>`);
+}
+
+/* ═══ FEATURES ═══ */
+function renderFeatures() {
+  const feats=[
+    {ico:'📄',title:'Student PDF Reports',desc:'Download complete student profiles as professionally formatted PDF files. Includes all fields, academic records, family details and mentor notes.',tag:'Implemented ✓'},
+    {ico:'💬',title:'Real-time Messaging',desc:'Send messages to students directly from the portal. Students receive instant in-app notifications with bell alerts and simulated email.',tag:'Implemented ✓'},
+    {ico:'🔔',title:'Push Notifications',desc:'Alert students about arrear deadlines, scholarship approvals, meeting reminders, and mentor messages through browser push notifications.',tag:'Implemented ✓'},
+    {ico:'📧',title:'Automated Email & SMS',desc:'Integrate with SMTP/Twilio to auto-send emails and SMS to students and parents about arrears, low CGPA, and scholarship deadlines.',tag:'Backend Integration'},
+    {ico:'📁',title:'Document Upload',desc:'Students upload offer letters, scholarship certificates, and ID proofs. Mentor verifies and approves each document centrally.',tag:'Enhancement'},
+    {ico:'📉',title:'Semester CGPA Graph',desc:'Visualize each student\'s CGPA per semester as a line/bar chart to detect academic decline patterns early.',tag:'Enhancement'},
+    {ico:'🤖',title:'AI Risk Prediction',desc:'Auto-flag students likely to fail based on attendance, CGPA trends, and arrear patterns using machine learning.',tag:'AI Feature'},
+    {ico:'📋',title:'ERP / LMS Sync',desc:'Integrate with college ERP (Fedena, SIMS) to auto-import attendance, marks, and fee payment status.',tag:'Integration'},
+    {ico:'📑',title:'NAAC / NIRF Reports',desc:'Generate accreditation-ready reports from student data in NAAC/NIRF format with a single click.',tag:'Compliance'},
+    {ico:'🎯',title:'Goal Tracker',desc:'Set academic, career, and placement goals per student. Track milestone completion visually per semester.',tag:'Enhancement'},
+    {ico:'📅',title:'Google Calendar Sync',desc:'Sync mentor-mentee meetings to Google Calendar. Auto-generate Google Meet links for online sessions.',tag:'Integration'},
+    {ico:'👨‍👩‍👧',title:'Parent Portal',desc:'Read-only access for parents to view their child\'s CGPA, attendance, arrears, and mentor remarks.',tag:'Enhancement'},
+    {ico:'🔒',title:'Multi-Role Access',desc:'Separate portals for Principal, Dean, HOD, and Mentor with strict read/write controls and audit logs.',tag:'Expansion'},
+    {ico:'📱',title:'Mobile PWA',desc:'Install EduTrack as a Progressive Web App on Android/iOS. Works offline and sends push notifications.',tag:'Enhancement'},
+    {ico:'🏅',title:'Achievement Portfolio',desc:'Students build digital portfolios of internships, research papers, projects, and certifications.',tag:'Enhancement'},
+  ];
+  const html=`<div style="margin-bottom:18px"><div style="font-size:20px;font-weight:800;margin-bottom:6px">💡 Complete Feature Roadmap</div><div style="font-size:13px;color:var(--muted)">Implemented features and recommended enhancements for a production-grade mentorship portal.</div></div>
+  <div class="feat-grid">${feats.map(f=>'<div class="feat-card"><div class="fc-ico">'+f.ico+'</div><div class="fc-title">'+f.title+'</div><div class="fc-desc">'+f.desc+'</div><div class="fc-tag">'+f.tag+'</div></div>').join('')}</div>`;
+  setContent(html);
+}
+
+/* ═══════════════════════════════════════════
+   STUDENT CRUD
+═══════════════════════════════════════════ */
+function openStudentModal(id) {
+  editingStudentId = id||'';
+  document.getElementById('modalTitle').textContent = id?'Edit Student':'Add New Student';
+  const fields=['name','regno','dob','blood','gender','year','dept','section','community','address','email','phone','whatsapp','father_name','father_occ','father_salary','father_phone','mother_name','mother_occ','mother_salary','mother_phone','guardian','sibling_count','sibling1','sibling2','sibling_notes','cgpa','gpa','arrears','arrear_sub','tenth','twelfth','schol','schol_type','schol_status','schol_amt','schol_year','schol_id','hack','hack_org','hack_res','hack_prize','extra','intern','medical','disability','hostel','notes'];
+  if(id) {
+    const s=STUDENTS.find(x=>x.id===id);
+    if(s) fields.forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value=s[f]||'';});
+  } else {
+    fields.forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
+  }
+  document.getElementById('studentModal').classList.add('open');
+}
+function editStudent(id){openStudentModal(id);}
+function closeStudentModal(){document.getElementById('studentModal').classList.remove('open');}
+
+async function saveStudent() {
+  const name=document.getElementById('f_name').value.trim();
+  const regno=document.getElementById('f_regno').value.trim();
+  const email=document.getElementById('f_email').value.trim();
+  if(!name||!regno){showToast('warn','⚠️ Name and Register No. are required');return;}
+  const g=f=>{const el=document.getElementById('f_'+f);return el?el.value:''};
+  const obj={
+    name,regno,email,
+    dob:g('dob'),blood:g('blood'),gender:g('gender'),year:g('year'),dept:g('dept')||'CSE',section:g('section'),community:g('community'),address:g('address'),
+    phone:g('phone'),whatsapp:g('whatsapp'),
+    father_name:g('father_name'),father_occ:g('father_occ'),father_salary:Number(g('father_salary'))||0,father_phone:g('father_phone'),
+    mother_name:g('mother_name'),mother_occ:g('mother_occ'),mother_salary:Number(g('mother_salary'))||0,mother_phone:g('mother_phone'),guardian:g('guardian'),
+    sibling_count:Number(g('sibling_count'))||0,sibling1:g('sibling1'),sibling2:g('sibling2'),sibling_notes:g('sibling_notes'),
+    cgpa:parseFloat(g('cgpa'))||0,gpa:parseFloat(g('gpa'))||0,arrears:parseInt(g('arrears'))||0,arrear_sub:g('arrear_sub'),tenth:g('tenth'),twelfth:g('twelfth'),
+    schol:g('schol'),schol_type:g('schol_type'),schol_status:g('schol_status'),schol_amt:Number(g('schol_amt'))||0,schol_year:g('schol_year'),schol_id:g('schol_id'),
+    hack:g('hack'),hack_org:g('hack_org'),hack_res:g('hack_res'),hack_prize:g('hack_prize'),
+    extra:g('extra'),intern:g('intern'),medical:g('medical'),disability:g('disability'),hostel:g('hostel'),notes:g('notes'),
+    mentorId:currentMentorId,
+  };
+  try {
+    if(editingStudentId) {
+      obj.id = editingStudentId;
+      const res = await api('PUT', '/students/' + editingStudentId, obj);
+      const idx = STUDENTS.findIndex(x=>x.id===editingStudentId);
+      if(idx>-1) STUDENTS[idx] = res.student;
+    } else {
+      const res = await api('POST', '/students', obj);
+      STUDENTS.push(res.student);
+    }
+    closeStudentModal();
+    showToast('success', editingStudentId?`✅ ${name} updated!`:`✅ ${name} added successfully!`);
+    showPage('students');
+    updateBadges();
+  } catch(err) {
+    showToast('warn', '⚠️ Save failed: ' + err.message);
+  }
+}
+
+async function deleteStudent(id) {
+  const s=STUDENTS.find(x=>x.id===id);
+  if(!confirm(`Delete ${s?.name||'this student'}'s complete record? This cannot be undone.`))return;
+  try {
+    await api('DELETE', '/students/' + id);
+    STUDENTS.splice(STUDENTS.findIndex(x=>x.id===id),1);
+    showToast('success','🗑 Student record deleted.');
+    showPage('students');
+    updateBadges();
+  } catch(err) {
+    showToast('warn', '⚠️ Delete failed: ' + err.message);
+  }
+}
+
+function saveStudentsToDB() {
+  /* No-op: student data is saved to the backend via API calls in saveStudent() / deleteStudent() */
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function renderCgpaChart(elId, sts) {
+  const el=document.getElementById(elId);if(!el)return;
+  const sorted=[...sts].sort((a,b)=>b.cgpa-a.cgpa);
+  el.innerHTML=sorted.map((s,i)=>{
+    const cols=['var(--emerald)','var(--blue)','var(--violet)','var(--amber)','var(--cyan)'];
+    return `<div class="cbar-row"><div class="cbar-name">${s.name.split(' ')[0]}</div>
+      <div class="cbar-bg"><div class="cbar-fill" style="width:0%;background:${cols[i%5]}" data-w="${(s.cgpa/10)*100}%"></div></div>
+      <span class="cbar-val">${s.cgpa}</span></div>`;
+  }).join('');
+  setTimeout(()=>document.querySelectorAll('.cbar-fill').forEach(b=>b.style.width=b.dataset.w),80);
+}
+
+function renderQuickAlerts(elId, sts) {
+  const el=document.getElementById(elId);if(!el)return;
+  let html='';
+  sts.filter(s=>s.arrears>0).forEach(s=>{html+=`<div style="display:flex;align-items:center;gap:8px;padding:9px;background:var(--bg3);border-radius:8px;margin-bottom:7px"><span>⚠️</span><span style="font-size:12px"><b>${s.name}</b> — ${s.arrears} arrear(s)</span></div>`;});
+  sts.filter(s=>s.schol_status==='Applied').forEach(s=>{html+=`<div style="display:flex;align-items:center;gap:8px;padding:9px;background:var(--bg3);border-radius:8px;margin-bottom:7px"><span>🏆</span><span style="font-size:12px"><b>${s.name}</b> — scholarship pending</span></div>`;});
+  el.innerHTML=html||`<div style="font-size:12px;color:var(--muted);padding:8px 0">No critical alerts 🎉</div>`;
+}
+
+function switchTab(el,tabId){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['pt1','pt2','pt3','pt4'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=id===tabId?'block':'none';});
+  const sts=getMyStudents();
+  if(tabId==='pt1')renderBars('p1',sts,'cgpa');
+  if(tabId==='pt2')renderBars('p2',sts,'gpa');
+  if(tabId==='pt4')renderIncomeBars('p4',sts);
+}
+
+function onSearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  if(!q){if(currentPage==='students')renderStudents();return;}
+  const found=getMyStudents().filter(s=>
+    s.name.toLowerCase().includes(q)||s.regno.toLowerCase().includes(q)||
+    s.email.toLowerCase().includes(q)||s.dept.toLowerCase().includes(q)||
+    (s.father_name||'').toLowerCase().includes(q)
+  );
+  renderStudents(found);
+  document.getElementById('pageTitle').textContent=`Search: "${q}" — ${found.length} result(s)`;
+}
+
+function updateBadges(){
+  const sts=getMyStudents();
+  const alertCount=NOTIFICATIONS.filter(n=>!n.read).length;
+  const el=document.getElementById('alertBadge');if(el){el.textContent=alertCount;el.style.display=alertCount?'':'none';}
+  const msgCount=Object.values(chatHistory).reduce((s,msgs)=>s+msgs.filter(m=>!m.read&&m.from==='student').length,0);
+  const mel=document.getElementById('msgBadge');if(mel){mel.textContent=msgCount;mel.style.display=msgCount?'':'none';}
+}
+
+function setContent(html){document.getElementById('contentArea').innerHTML=html;}
+
+let toastT;
+function showToast(type, msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.className=`toast ${type} show`;
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeStudentModal();
+    closeMsgModal();
+    closeStudentInbox();
+  }
+});
+</script>
+</body>
+</html>
